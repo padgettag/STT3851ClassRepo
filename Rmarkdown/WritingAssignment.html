@@ -126,13 +126,13 @@ $(document).ready(function () {
 <div id="directions" class="section level2 unnumbered">
 <h2>Directions</h2>
 <p>Recreate this document exactly using <a href="http://rmarkdown.rstudio.com/">R Markdown</a>. A great reference for creating technical documents with R Markdown is <a href="https://bookdown.org/yihui/bookdown/"><em>bookdown: Authoring Books and Technical Documents with R Markdown</em></a>. Your YAML should look similar to:</p>
-<pre><code>---
+<pre class="eval"><code>---
 title: &quot;Writing Assignment&quot;
 author: &quot;Leave This Blank&quot;
 bibliography: [packages.bib, ISLR.bib]
 output: 
     bookdown::html_document2
-date: 'Last compiled: Feb 11, 2017'
+date: 'Last compiled: `r format(Sys.time(), &quot;%b %d, %Y&quot;)`'
 ---</code></pre>
 </div>
 <div id="from-page-62-of-islr-james_introduction_2013" class="section level1">
