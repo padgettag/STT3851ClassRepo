@@ -16,11 +16,11 @@ library(tidyverse)
 knitr::opts_chunk$set(comment = NA,  fig.align = 'center', fig.height = 5, fig.width = 5, prompt = FALSE, highlight = TRUE, tidy = FALSE, warning = FALSE, message = FALSE, tidy.opts=list(blank = TRUE, width.cutoff= 75, cache = TRUE))
 ```
 
-# Read in data with `read_csv()`
+# Read in data with `read.csv()`
 
 ```{r message = FALSE}
 site <- "http://www-bcf.usc.edu/~gareth/ISL/Advertising.csv"
-AD <- read_csv(site)
+AD <- read.csv(site)
 head(AD)
 dim(AD)
 library(DT)
@@ -406,6 +406,11 @@ Do females have a higher ratio of `Balance` to `Income` (credit utilization)? He
 ```{r}
 Credit$Utilization <- Credit$Balance / (Credit$Income*100)
 tapply(Credit$Utilization, Credit$Gender, mean)
+# Tidyverse approach
+Credit %>%
+  mutate(Ratio = Balance / (Income*100) ) %>%
+  group_by(Gender) %>%
+  summarize(mean(Ratio))
 ```
 
 ```{r}
