@@ -3,7 +3,7 @@ title: "Chapter Two Graphs"
 author: "Alan Arnholt"
 date: 'Last updated: `r format(Sys.time(), "%b %d, %Y")`'
 output:
-  html_document:
+  bookdown::html_document2:
     css: ../CSS/asu.css
     highlight: textmate
     theme: yeti
@@ -12,14 +12,15 @@ output:
 ```{r, label = "SETUP", echo = FALSE, results= 'hide', message = FALSE, warning = FALSE}
 set.seed(123)
 library(knitr)
+library(tidyverse)
 knitr::opts_chunk$set(comment = NA,  fig.align = 'center', fig.height = 5, fig.width = 5, prompt = FALSE, highlight = TRUE, tidy = FALSE, warning = FALSE, message = FALSE, tidy.opts=list(blank = TRUE, width.cutoff= 75, cache = TRUE))
 ```
 
-
+# Read in data with `read_csv()`
 
 ```{r message = FALSE}
 site <- "http://www-bcf.usc.edu/~gareth/ISL/Advertising.csv"
-AD <- read.csv(site)
+AD <- read_csv(site)
 head(AD)
 dim(AD)
 library(DT)
@@ -77,7 +78,7 @@ scatterplotMatrix(~ Sales + TV + Radio + Newspaper, data = AD)
 ```
 
 
-## Chapter 3
+# Chapter 3
 
 Recall `mod1`
 
@@ -86,7 +87,10 @@ mod1 <- lm(Sales ~ TV, data = AD)
 summary(mod1)
 ```
 
-**Residual:** $e_i = y_i - \hat{y_i}$
+\begin{equation}
+\text{Residual}\equiv e_i = y_i - \hat{y_i}
+(\#eq:resid)
+\end{equation}
 
 To obtain the residuals for `mod1` use the function `resid` on a linear model object.
 
@@ -141,9 +145,12 @@ summary(mod1)$r.squared
 
 ## Confidence Interval for $\beta_1$
 
-$$\text{CI}_{1 - \alpha}(\beta_1) = \left[b_1 - t_{1- \alpha/2, n - p + 1}SE(b1), b_1 + t_{1- \alpha/2, n - p + 1}SE(b1) \right]$$
+\begin{equation}
+\text{CI}_{1 - \alpha}(\beta_1) = \left[b_1 - t_{1- \alpha/2, n - p + 1}SE(b1), b_1 + t_{1- \alpha/2, n - p + 1}SE(b1) \right]
+(\#eq:ci)
+\end{equation}
 
-**Example:** Construct a 90% confidence interval for $\beta_1$.
+**Example:** Use Equation \@ref(eq:ci) to construct a 90% confidence interval for $\beta_1$.
 
 ```{r}
 alpha <- 0.10
