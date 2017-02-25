@@ -245,13 +245,13 @@ $$
 (\#eq:varcovest)
 \end{equation}
 
-$$\hat{\mathbf{\beta}} \sim(\mathbf{\beta}, \sigma^2(\mathbf{X'X})^{-1})$$
+$$\hat{\mathbf{\beta}} \sim\mathcal{N}(\mathbf{\beta}, \sigma^2(\mathbf{X'X})^{-1})$$
 
 ### Estimation of the Mean Response for New Values $X_h$
 
 Not only is it desireable to create confidence intervals on the parameters of the regression models, bit it is also common to estimate the mean response $\left(E(Y_h)\right)$ for a particular set of $\mathbf{X}$ values.
 
-$$\hat{Y}_h \sim N(Y_h = X_h\beta, \sigma^2\mathbf{X_h}(\mathbf{X'X})^{-1}\mathbf{X_h'})$$
+$$\hat{Y}_h \sim \mathcal{N}(Y_h = X_h\beta, \sigma^2\mathbf{X_h}(\mathbf{X'X})^{-1}\mathbf{X_h'})$$
 For a vector of given values $(\mathbf{X_h})$, a $(1 - \alpha)\cdot 100\%$ confidence interval for the mean response $E(Y_h)$ is
 
 $$CI_{1-\alpha}\left[E(Y_h)\right] = \left[\hat{Y}_h - t_{1 - \alpha/2;n - p - 1}\cdot s_{\hat{Y}_h}, \hat{Y}_h + t_{1 - \alpha/2;n - p - 1}\cdot s_{\hat{Y}_h}  \right]$$
@@ -564,7 +564,8 @@ ggplot(data = Credit, aes(x = Limit, y = Balance, color = Student)) +
   geom_point() + 
   theme_bw() + 
   geom_abline(intercept = coef(S2M)[1], slope = coef(S2M)[2], color = "red") + 
-  geom_abline(intercept = coef(S2M)[1] + coef(S2M)[3], slope = coef(S2M)[2], color = "blue")
+  geom_abline(intercept = coef(S2M)[1] + coef(S2M)[3], slope = coef(S2M)[2], color = "blue") + 
+  scale_color_manual(values = c("red", "blue"))
 ```
 
 ### Qualitative predictors with More than Two Levels
