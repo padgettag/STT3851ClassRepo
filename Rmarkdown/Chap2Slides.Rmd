@@ -134,6 +134,12 @@ RSE <- sqrt(RSS/(dim(AD)[1]-2))
 RSE
 # Or
 summary(mod1)$sigma
+# Or
+library(broom)
+NDF <- augment(mod1)
+sum(NDF$.resid^2)
+RSE <- sqrt(sum(NDF$.resid^2)/df.residual(mod1))
+RSE
 ```
 
 The least squares estimators of $\beta_0$ and $\beta_1$ are
@@ -186,9 +192,9 @@ summary(mod1)$r.squared
 
 ```{r}
 alpha <- 0.10
-ct <- qt(1 - alpha/2, 198)
+ct <- qt(1 - alpha/2, df.residual(mod1))
 ct
-b1 +c(-1, 1)*ct*seb1
+b1 + c(-1, 1)*ct*seb1
 # Or
 confint(mod1, parm = "TV", level = 0.90)
 confint(mod1)
@@ -222,6 +228,35 @@ $$A = \begin{bmatrix}
 \end{bmatrix}
 $$
 
+### Linear Regression Matrix Notation
+
+\begin{equation}
+\hat{\mathbf{\beta}} = (\mathbf{X'X})^{-1}\mathbf{X'Y}
+(\#eq:betas)
+\end{equation}
+
+\begin{equation}
+\sigma^2_{\hat{\beta}} = \sigma^2(\mathbf{X'X})^{-1}
+(\#eq:varcov)
+\end{equation}
+
+\begin{equation}
+\hat{\sigma}^2_{\hat{\beta}} = MSE(\mathbf{X'X})^{-1}
+(\#eq:varcovest)
+\end{equation}
+
+$$\hat{\mathbf{\beta}} \sim(\mathbf{\beta}, \sigma^2(\mathbf{X'X})^{-1})$$
+
+### Estimation of the Mean Response for New Values $X_h$
+
+Not only is it desireable to create confidence intervals on the parameters of the regression models, bit it is also common to estimate the mean response $\left(E(Y_h)\right)$ for a particular set of $\mathbf{X}$ values.
+
+$$\hat{Y}_h \sim N(Y_h = X_h\beta, \sigma^2\mathbf{X_h}(\mathbf{X'X})^{-1}\mathbf{X_h'})$$
+For a vector of given values $(\mathbf{X_h})$, a $(1 - \alpha)\cdot 100\%$ confidence interval for the mean response $E(Y_h)$ is
+
+$$CI_{1-\alpha}\left[E(Y_h)\right] = \left[\hat{Y}_h - t_{1 - \alpha/2;n - p - 1}\cdot s_{\hat{Y}_h}, \hat{Y}_h + t_{1 - \alpha/2;n - p - 1}\cdot s_{\hat{Y}_h}  \right]$$
+The function `predict()` applied to a linear model object will compute $\hat{Y}_h$ and $s_{\hat{Y}_h}$ for a given $\mathbf{X}_h$.  `R` output has $\hat{Y}_h$ labeled `fit` and $s_{\hat{Y}_h}$ labeled `se.fit`.
+
 ```{r}
 A <- matrix(c(2, 9, 4, 5), nrow = 2)
 A
@@ -246,9 +281,46 @@ betahat
 coef(mod1)
 XTXI <- summary(mod1)$cov.unscaled
 MSE <- summary(mod1)$sigma^2
-var.cov.b <- MSE*XTXI
-var.cov.b
+var_cov_b <- MSE*XTXI
+var_cov_b
 ```
+
+**Example** Use the `GRADES` data set and model `gpa` as a function of `sat`.  Compute the expected GPA (`gpa`) for an SAT score (`sat`) of 1300.  Construct a 90% confidence interval for the mean GPA for students scoring 1300 on the SAT.
+
+```{r}
+library(PASWR2)
+mod.lm <- lm(gpa ~ sat, data = GRADES)
+summary(mod.lm)
+betahat <- coef(mod.lm)
+betahat
+knitr::kable(tidy(mod.lm))
+#
+Xh <- matrix(c(1, 1300), nrow = 1)
+Yhath <- Xh%*%betahat
+Yhath
+predict(mod.lm, newdata = data.frame(sat = 1300))
+# Linear Algebra First
+anova(mod.lm)
+MSE <- anova(mod.lm)[2, 3]
+MSE
+XTXI <- summary(mod.lm)$cov.unscaled
+XTXI
+var_cov_b <- MSE*XTXI
+var_cov_b
+s2yhath <- Xh %*% var_cov_b %*% t(Xh)
+s2yhath
+syhath <- sqrt(s2yhath)
+syhath
+crit_t <- qt(0.95, df.residual(mod.lm))
+crit_t
+CI_EYh <- Yhath + c(-1, 1)*crit_t*syhath
+CI_EYh
+# Using the build in function
+predict(mod.lm, newdata = data.frame(sat = 1300), interval = "conf", level = 0.90)
+```
+
+
+
 
 ## Multiple Linear Regression
 
@@ -360,7 +432,7 @@ stepAIC(lm(Sales ~ TV + Radio + Newspaper, data = AD), scope = .~TV + Radio + Ne
 
 ## Diagnostic Plots
 
-```{r}
+```{r, fig.width = 7, fig.height = 7}
 residualPlots(mod2)
 qqPlot(mod2)
 influenceIndexPlot(mod2)
@@ -429,8 +501,8 @@ library(ggplot2)
 ggplot(data = Credit, aes(x = Gender, y = Balance)) + 
   geom_point() + 
   theme_bw() + 
-  geom_hline(yintercept = coef(modS)[1] + coef(modS)[2], color = "blue") + 
-  geom_hline(yintercept = coef(modS)[1], color = "pink")
+  geom_hline(yintercept = coef(modS)[1] + coef(modS)[2], color = "purple") + 
+  geom_hline(yintercept = coef(modS)[1], color = "green")
 ```
 
 Do females have a higher ratio of `Balance` to `Income` (credit utilization)? Here is an article from the [Washington Post](https://www.washingtonpost.com/news/get-there/wp/2016/02/17/how-being-a-woman-can-ding-your-credit-score/) with numbers that mirror some of the results in the `Credit` data set.
@@ -452,8 +524,8 @@ coef(modU)
 ggplot(data = Credit, aes(x = Gender, y = Utilization)) + 
   geom_point() + 
   theme_bw() + 
-  geom_hline(yintercept = coef(modU)[1] + coef(modU)[2], color = "blue") + 
-  geom_hline(yintercept = coef(modU)[1], color = "pink")
+  geom_hline(yintercept = coef(modU)[1] + coef(modU)[2], color = "purple") + 
+  geom_hline(yintercept = coef(modU)[1], color = "green")
 ```
 
 
@@ -479,17 +551,20 @@ Several points:
 ```{r}
 ggplot(data = Credit, aes(x = Limit, y = Balance, color = Student)) + 
   geom_point() + 
-  stat_smooth(method = "lm")
+  stat_smooth(method = "lm") + 
+  theme_bw()
 ```
 
 ### Correct Graph
 
 ```{r}
+S2M <- lm(Balance ~ Limit + Student, data = Credit)
+#
 ggplot(data = Credit, aes(x = Limit, y = Balance, color = Student)) +
   geom_point() + 
   theme_bw() + 
-  geom_abline(intercept = coef(modS1)[1], slope = coef(modS1)[2], color = "red") + 
-  geom_abline(intercept = coef(modS1)[1] + coef(modS1)[3], slope = coef(modS1)[2], color = "blue")
+  geom_abline(intercept = coef(S2M)[1], slope = coef(S2M)[2], color = "red") + 
+  geom_abline(intercept = coef(S2M)[1] + coef(S2M)[3], slope = coef(S2M)[2], color = "blue")
 ```
 
 ### Qualitative predictors with More than Two Levels
