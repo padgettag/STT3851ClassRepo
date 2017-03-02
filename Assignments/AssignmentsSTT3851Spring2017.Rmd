@@ -2,11 +2,11 @@
 title: "Assignments STT 3851 - Spring 2017"
 author: "Alan T. Arnholt"
 date: 'Last Updated on: `r format(Sys.time(), "%b %d, %Y at %X")`'
-output:
-  html_document:
-    css: ../CSS/asu.css
+output: 
+  bookdown::html_document2: 
     highlight: textmate
     theme: yeti
+    css: "../CSS/style.css"
 ---
 
 **Jan 17:**
@@ -22,6 +22,12 @@ output:
     + Read this stackoverflow thread details how to create a [minimal R reproducible example](http://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example/5963610#5963610). 
     + Read [How To Ask Questions The Smart Way](http://www.catb.org/~esr/faqs/smart-questions.html) by Eric Raymond and Rick Moen and heed their advice.
     + Read [Getting used to R, RStudio, and R Markdown](https://ismayc.github.io/rbasics-book/)
+    
+    ```{block2, note-text, type='rmdnote'}
+1.  Most due dates are 5 p.m. Friday for [CrowdGrader](https://www.crowdgrader.org/) assignments.
+
+2.  Most [CrowdGrader](https://www.crowdgrader.org/) peer reviews will be due by 11 p.m. on Tuesdays.
+```  
 
 **Jan 19:**
 
@@ -158,6 +164,7 @@ git pull upstream gh-pages
     + Watch [Interactions and Nonlinearity](https://www.youtube.com/watch?v=IFzVxLv0TKQ) (14:16)
     + Watch [Lab: Linear Regression](https://www.youtube.com/watch?v=5ONFqIk3RFg) (22:10)
 * Discuss [Chapter 2 and 3 material](../Rmarkdown/Chap2Slides.html)
+* Go over [Bias Variance Graphs again](../Rmarkdown/BiasVarianceGGplot.html)
 * Quiz #6
 
 **Feb 28:**
@@ -172,7 +179,7 @@ git pull upstream gh-pages
     + [Start Project 1](http://www.amstat.org/publications/jse/v16n2/datasets.pardoe.html) - Read the hyperlinked paper.  
     + The data set can be downloaded from http://www.amstat.org/publications/jse/datasets/homes76.dat.txt, while the code book is available from http://www.amstat.org/publications/jse/datasets/homes76.txt
 * Reproduce [Lab: Linear Regression](../Rmarkdown/LabChap3.html).  Submit your html file to [CrowdGrader](https://www.crowdgrader.org/crowdgrader/venues/view_venue/2746) no later than 5 pm Mar 3.
-* Quiz #7
+* Quiz #7 (Chapter 3 Assessment)
 
 
 **Mar 7:**
@@ -183,7 +190,7 @@ git pull upstream gh-pages
 **Mar 9:**
 
 * [Work on Project 1](../Rmarkdown/DirectionsMHP.html)
-* Quiz #8
+* Quiz #8 (Chapter 3 Assessment)
 
 **~~Mar 13 - Mar 17:~~ ** **No Class - Spring Break**
 
@@ -296,4 +303,4 @@ Start Project 2
 
 
 
-#[Home Page](http://stat-ata-asu.github.io/STT3851ClassRepo/) - [Syllabus](http://stat-ata-asu.github.io/STT3851ClassRepo/Syllabus/STT3851Spring2017Syllabus.html) - [Piazza](https://piazza.com/appstate/spring2017/stt/home)
+#[Home Page](http://stat-ata-asu.github.io/STT3851ClassRepo/) - [Syllabus](http://stat-ata-asu.github.io/STT3851ClassRepo/Syllabus/STT3851Spring2017Syllabus.html) - [Piazza](https://piazza.com/appstate/spring2017/stt/home) {-}

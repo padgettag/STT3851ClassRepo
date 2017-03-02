@@ -3,7 +3,7 @@ title: "Chapter Two Graphs"
 author: "Alan Arnholt"
 date: 'Last updated: `r format(Sys.time(), "%b %d, %Y")`'
 output:
-  html_document:
+  bookdown::html_document2:
     css: ../CSS/asu.css
     highlight: textmate
     theme: yeti
@@ -12,10 +12,11 @@ output:
 ```{r, label = "SETUP", echo = FALSE, results= 'hide', message = FALSE, warning = FALSE}
 set.seed(123)
 library(knitr)
+library(tidyverse)
 knitr::opts_chunk$set(comment = NA,  fig.align = 'center', fig.height = 5, fig.width = 5, prompt = FALSE, highlight = TRUE, tidy = FALSE, warning = FALSE, message = FALSE, tidy.opts=list(blank = TRUE, width.cutoff= 75, cache = TRUE))
 ```
 
-
+# Read in data with `read.csv()`
 
 ```{r message = FALSE}
 site <- "http://www-bcf.usc.edu/~gareth/ISL/Advertising.csv"
@@ -34,6 +35,20 @@ plot(Sales ~ TV, data = AD, col = "red", pch = 19)
 mod1 <- lm(Sales ~ TV, data = AD)
 abline(mod1, col = "blue")
 ```
+```{r, fig.width = 12, fig.height = 4}
+par(mfrow=c(1, 3))
+plot(Sales ~ TV, data = AD, col = "red", pch = 19)
+mod1 <- lm(Sales ~ TV, data = AD)
+abline(mod1, col = "blue")
+plot(Sales ~ Radio, data = AD, col = "red", pch = 19)
+mod2 <- lm(Sales ~ Radio, data = AD)
+abline(mod2, col = "blue")
+plot(Sales ~ Newspaper, data = AD, col = "red", pch = 19)
+mod3 <- lm(Sales ~ Newspaper, data = AD)
+abline(mod3, col = "blue")
+par(mfrow=c(1, 1))
+```
+
 
 ## Using `ggplot2`
 
@@ -47,6 +62,23 @@ p <- ggplot(data = AD, aes(x = TV, y = Sales)) +
   geom_smooth(method = "rlm", color = "purple", se = FALSE) +
   theme_bw()
 p
+```
+
+```{r, fig.width = 12, fig.height = 4}
+library(gridExtra)
+p1 <- ggplot(data = AD, aes(x = TV, y = Sales)) +
+        geom_point(color = "lightblue") + 
+        geom_smooth(method = "lm", se = FALSE, color = "blue") +
+        theme_bw()
+p2 <- ggplot(data = AD, aes(x = Radio, y = Sales)) +
+        geom_point(color = "lightblue") +
+        geom_smooth(method = "lm", se = FALSE, color = "blue") +
+        theme_bw()
+p3 <- ggplot(data = AD, aes(x = Newspaper, y = Sales)) +
+        geom_point(color = "lightblue") +
+        geom_smooth(method = "lm", se = FALSE, color = "blue") + 
+        theme_bw()
+grid.arrange(p1, p2, p3, ncol = 3)
 ```
 
 ## Using `ggvis`
@@ -65,19 +97,20 @@ AD %>%
 
 ```{r, message = FALSE}
 library(plotly)
-p2 <- ggplotly(p)
-p2
+p11 <- ggplotly(p)
+p11
 ```
+
 
 ## Scatterplot Matrices
 
-```{r}
+```{r, fig.width = 8, fig.height = 8}
 library(car)
 scatterplotMatrix(~ Sales + TV + Radio + Newspaper, data = AD)
 ```
 
 
-## Chapter 3
+# Chapter 3
 
 Recall `mod1`
 
@@ -86,7 +119,10 @@ mod1 <- lm(Sales ~ TV, data = AD)
 summary(mod1)
 ```
 
-**Residual:** $e_i = y_i - \hat{y_i}$
+\begin{equation}
+\text{Residual}\equiv e_i = y_i - \hat{y_i}
+(\#eq:resid)
+\end{equation}
 
 To obtain the residuals for `mod1` use the function `resid` on a linear model object.
 
@@ -98,6 +134,12 @@ RSE <- sqrt(RSS/(dim(AD)[1]-2))
 RSE
 # Or
 summary(mod1)$sigma
+# Or
+library(broom)
+NDF <- augment(mod1)
+sum(NDF$.resid^2)
+RSE <- sqrt(sum(NDF$.resid^2)/df.residual(mod1))
+RSE
 ```
 
 The least squares estimators of $\beta_0$ and $\beta_1$ are
@@ -141,15 +183,18 @@ summary(mod1)$r.squared
 
 ## Confidence Interval for $\beta_1$
 
-$$\text{CI}_{1 - \alpha}(\beta_1) = \left[b_1 - t_{1- \alpha/2, n - p + 1}SE(b1), b_1 + t_{1- \alpha/2, n - p + 1}SE(b1) \right]$$
+\begin{equation}
+\text{CI}_{1 - \alpha}(\beta_1) = \left[b_1 - t_{1- \alpha/2, n - p + 1}SE(b1), b_1 + t_{1- \alpha/2, n - p + 1}SE(b1) \right]
+(\#eq:ci)
+\end{equation}
 
-**Example:** Construct a 90% confidence interval for $\beta_1$.
+**Example:** Use Equation \@ref(eq:ci) to construct a 90% confidence interval for $\beta_1$.
 
 ```{r}
 alpha <- 0.10
-ct <- qt(1 - alpha/2, 198)
+ct <- qt(1 - alpha/2, df.residual(mod1))
 ct
-b1 +c(-1, 1)*ct*seb1
+b1 + c(-1, 1)*ct*seb1
 # Or
 confint(mod1, parm = "TV", level = 0.90)
 confint(mod1)
@@ -183,6 +228,35 @@ $$A = \begin{bmatrix}
 \end{bmatrix}
 $$
 
+### Linear Regression Matrix Notation
+
+\begin{equation}
+\hat{\mathbf{\beta}} = (\mathbf{X'X})^{-1}\mathbf{X'Y}
+(\#eq:betas)
+\end{equation}
+
+\begin{equation}
+\sigma^2_{\hat{\beta}} = \sigma^2(\mathbf{X'X})^{-1}
+(\#eq:varcov)
+\end{equation}
+
+\begin{equation}
+\hat{\sigma}^2_{\hat{\beta}} = MSE(\mathbf{X'X})^{-1}
+(\#eq:varcovest)
+\end{equation}
+
+$$\hat{\mathbf{\beta}} \sim\mathcal{N}(\mathbf{\beta}, \sigma^2(\mathbf{X'X})^{-1})$$
+
+### Estimation of the Mean Response for New Values $X_h$
+
+Not only is it desireable to create confidence intervals on the parameters of the regression models, bit it is also common to estimate the mean response $\left(E(Y_h)\right)$ for a particular set of $\mathbf{X}$ values.
+
+$$\hat{Y}_h \sim \mathcal{N}(Y_h = X_h\beta, \sigma^2\mathbf{X_h}(\mathbf{X'X})^{-1}\mathbf{X_h'})$$
+For a vector of given values $(\mathbf{X_h})$, a $(1 - \alpha)\cdot 100\%$ confidence interval for the mean response $E(Y_h)$ is
+
+$$CI_{1-\alpha}\left[E(Y_h)\right] = \left[\hat{Y}_h - t_{1 - \alpha/2;n - p - 1}\cdot s_{\hat{Y}_h}, \hat{Y}_h + t_{1 - \alpha/2;n - p - 1}\cdot s_{\hat{Y}_h}  \right]$$
+The function `predict()` applied to a linear model object will compute $\hat{Y}_h$ and $s_{\hat{Y}_h}$ for a given $\mathbf{X}_h$.  `R` output has $\hat{Y}_h$ labeled `fit` and $s_{\hat{Y}_h}$ labeled `se.fit`.
+
 ```{r}
 A <- matrix(c(2, 9, 4, 5), nrow = 2)
 A
@@ -207,9 +281,46 @@ betahat
 coef(mod1)
 XTXI <- summary(mod1)$cov.unscaled
 MSE <- summary(mod1)$sigma^2
-var.cov.b <- MSE*XTXI
-var.cov.b
+var_cov_b <- MSE*XTXI
+var_cov_b
 ```
+
+**Example** Use the `GRADES` data set and model `gpa` as a function of `sat`.  Compute the expected GPA (`gpa`) for an SAT score (`sat`) of 1300.  Construct a 90% confidence interval for the mean GPA for students scoring 1300 on the SAT.
+
+```{r}
+library(PASWR2)
+mod.lm <- lm(gpa ~ sat, data = GRADES)
+summary(mod.lm)
+betahat <- coef(mod.lm)
+betahat
+knitr::kable(tidy(mod.lm))
+#
+Xh <- matrix(c(1, 1300), nrow = 1)
+Yhath <- Xh%*%betahat
+Yhath
+predict(mod.lm, newdata = data.frame(sat = 1300))
+# Linear Algebra First
+anova(mod.lm)
+MSE <- anova(mod.lm)[2, 3]
+MSE
+XTXI <- summary(mod.lm)$cov.unscaled
+XTXI
+var_cov_b <- MSE*XTXI
+var_cov_b
+s2yhath <- Xh %*% var_cov_b %*% t(Xh)
+s2yhath
+syhath <- sqrt(s2yhath)
+syhath
+crit_t <- qt(0.95, df.residual(mod.lm))
+crit_t
+CI_EYh <- Yhath + c(-1, 1)*crit_t*syhath
+CI_EYh
+# Using the build in function
+predict(mod.lm, newdata = data.frame(sat = 1300), interval = "conf", level = 0.90)
+```
+
+
+
 
 ## Multiple Linear Regression
 
@@ -286,7 +397,7 @@ anova(mod1, mod3)
 
 ```{r}
 mod.fs <- lm(Sales ~ 1, data = AD)
-SCOPE <- (~. + TV + Radio + Newspaper)
+SCOPE <- (~ TV + Radio + Newspaper)
 add1(mod.fs, scope = SCOPE, test = "F")
 mod.fs <- update(mod.fs, .~. + TV)
 add1(mod.fs, scope = SCOPE, test = "F")
@@ -298,7 +409,11 @@ summary(mod.fs)
 * Using `stepAIC`
 
 ```{r}
-stepAIC(lm(Sales ~ 1, data = AD), scope = .~TV + Radio + Newspaper, direction = "forward", test = "F")
+stepAIC(lm(Sales ~ 1, data = AD), scope = (~TV + Radio + Newspaper), direction = "forward", test = "F")
+# Or
+null <- lm(Sales ~ 1, data = AD)
+full <- lm(Sales ~ ., data = AD)
+stepAIC(null, scope = list(lower = null, upper = full), direction = "forward", test = "F")
 ```
 
 
@@ -315,13 +430,16 @@ summary(mod.be)
 * Using `stepAIC`
 
 ```{r}
-stepAIC(lm(Sales ~ TV + Radio + Newspaper, data = AD), scope = .~TV + Radio + Newspaper, direction = "backward", test = "F")
+stepAIC(lm(Sales ~ TV + Radio + Newspaper, data = AD), scope = (~TV + Radio + Newspaper), direction = "backward", test = "F")
+# Or
+stepAIC(full, scope = list(lower = null, upper = full), direction = "backward", test = "F")
+
 ```
 
 
 ## Diagnostic Plots
 
-```{r}
+```{r, fig.width = 7, fig.height = 7}
 residualPlots(mod2)
 qqPlot(mod2)
 influenceIndexPlot(mod2)
@@ -390,8 +508,8 @@ library(ggplot2)
 ggplot(data = Credit, aes(x = Gender, y = Balance)) + 
   geom_point() + 
   theme_bw() + 
-  geom_hline(yintercept = coef(modS)[1] + coef(modS)[2], color = "blue") + 
-  geom_hline(yintercept = coef(modS)[1], color = "pink")
+  geom_hline(yintercept = coef(modS)[1] + coef(modS)[2], color = "purple") + 
+  geom_hline(yintercept = coef(modS)[1], color = "green")
 ```
 
 Do females have a higher ratio of `Balance` to `Income` (credit utilization)? Here is an article from the [Washington Post](https://www.washingtonpost.com/news/get-there/wp/2016/02/17/how-being-a-woman-can-ding-your-credit-score/) with numbers that mirror some of the results in the `Credit` data set.
@@ -399,6 +517,11 @@ Do females have a higher ratio of `Balance` to `Income` (credit utilization)? He
 ```{r}
 Credit$Utilization <- Credit$Balance / (Credit$Income*100)
 tapply(Credit$Utilization, Credit$Gender, mean)
+# Tidyverse approach
+Credit %>%
+  mutate(Ratio = Balance / (Income*100) ) %>%
+  group_by(Gender) %>%
+  summarize(mean(Ratio))
 ```
 
 ```{r}
@@ -408,8 +531,8 @@ coef(modU)
 ggplot(data = Credit, aes(x = Gender, y = Utilization)) + 
   geom_point() + 
   theme_bw() + 
-  geom_hline(yintercept = coef(modU)[1] + coef(modU)[2], color = "blue") + 
-  geom_hline(yintercept = coef(modU)[1], color = "pink")
+  geom_hline(yintercept = coef(modU)[1] + coef(modU)[2], color = "purple") + 
+  geom_hline(yintercept = coef(modU)[1], color = "green")
 ```
 
 
@@ -435,17 +558,21 @@ Several points:
 ```{r}
 ggplot(data = Credit, aes(x = Limit, y = Balance, color = Student)) + 
   geom_point() + 
-  stat_smooth(method = "lm")
+  stat_smooth(method = "lm") + 
+  theme_bw()
 ```
 
 ### Correct Graph
 
 ```{r}
+S2M <- lm(Balance ~ Limit + Student, data = Credit)
+#
 ggplot(data = Credit, aes(x = Limit, y = Balance, color = Student)) +
   geom_point() + 
   theme_bw() + 
-  geom_abline(intercept = coef(modS1)[1], slope = coef(modS1)[2], color = "red") + 
-  geom_abline(intercept = coef(modS1)[1] + coef(modS1)[3], slope = coef(modS1)[2], color = "blue")
+  geom_abline(intercept = coef(S2M)[1], slope = coef(S2M)[2], color = "red") + 
+  geom_abline(intercept = coef(S2M)[1] + coef(S2M)[3], slope = coef(S2M)[2], color = "blue") + 
+  scale_color_manual(values = c("red", "blue"))
 ```
 
 ### Qualitative predictors with More than Two Levels
@@ -484,12 +611,14 @@ ggplot(data = Credit, aes(x = Limit, y = Balance)) +
 
 ```{r, warning = FALSE, message = FALSE, fig.width = 12, fig.height = 12}
 scatterplotMatrix(~ Balance + Income + Limit + Rating + Cards + Age + Education + Gender + Student + Married + Ethnicity,  data = Credit)
-modC <- stepAIC(lm(Balance ~ Income + Limit + Rating + Cards + Age + Education + Gender + Student + Married + Ethnicity,  data = Credit), direction = "backward", test = "F")
+null <- lm(Balance ~ 1, data = Credit)
+full <- lm(Balance ~ ., data = Credit)
+modC <- stepAIC(full, scope = list(lower = null, upper = full), direction = "backward", test = "F")
 modC
-modD <- stepAIC(lm(Balance ~ 1, data = Credit), scope = ~ . + Income + Limit + Cards + Age + Education + Gender + Student + Married + Ethnicity, direction = "forward", test = "F")
+modD <- stepAIC(null, scope = list(lower = null, upper = full), direction = "forward", test = "F")
 modD
 # Predict
-predict(modC, newdata = data.frame(Income = 80, Limit = 5000, Cards = 3, Age = 52, Student = "No", Rating = 800), interval = "pred")
+predict(modC, newdata = data.frame(Income = 80, Limit = 5000, Cards = 3, Age = 52, Student = "No", Rating = 800, Utilization = 0.10), interval = "pred")
 ```
 
 ## More Diagnostic Plots
@@ -552,11 +681,11 @@ Compute the VIF for each $\hat{\beta}_j$ of `modC`
 
 ```{r}
 modC
-R2inc <- summary(lm(Income ~ Limit + Rating + Cards + Age + Student, data = Credit))$r.squared
+R2inc <- summary(lm(Income ~ Limit + Rating + Cards + Age + Student + Utilization, data = Credit))$r.squared
 R2inc
 VIFinc <- 1/(1 - R2inc)
 VIFinc
-R2lim <- summary(lm(Limit ~ Income + Rating + Cards + Age + Student, data = Credit))$r.squared
+R2lim <- summary(lm(Limit ~ Income + Rating + Cards + Age + Student + Utilization, data = Credit))$r.squared
 R2lim
 VIFlim <- 1/(1 - R2lim)
 VIFlim
