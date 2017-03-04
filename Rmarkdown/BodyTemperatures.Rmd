@@ -120,3 +120,59 @@ CIT
 ## Or
 PASWR2::z.test(x = BT$BodyTemp, sigma.x = 0.77, mu = 98.6)
 ```
+
+## Data Tweaking
+
+```{r}
+BT <- BT %>%
+  mutate(Gender = factor(Gender, levels = c(0, 1), labels = c( "Male", "Female")))
+DT::datatable(BT)
+BT %>%
+  group_by(Gender) %>%
+  summarize(mean(BodyTemp), sd(BodyTemp), n())
+```
+
+\begin{equation}
+H_O: \mu_{\text{Female}} - \mu_{\text{Male}} = 0 \\
+H_O: \mu_{\text{Female}} - \mu_{\text{Male}} \neq 0 
+(\#eq:nullalt2)
+\end{equation}
+
+### Classical Approach
+
+```{r}
+t.test(BodyTemp ~ Gender, data = BT)
+STUFF <- BT %>%
+  group_by(Gender) %>%
+  summarize(MA = mean(BodyTemp))
+obsdiff <- diff(tapply(BT$BodyTemp, BT$Gender, mean))
+obsdiff
+```
+
+### Randomization Approach
+
+```{r}
+SIMS <- 10^4 - 1
+diffmeans <- numeric(SIMS)
+for(i in 1:SIMS){
+  diffmeans[i] <- diff(tapply(BT$BodyTemp, sample(BT$Gender), mean))
+}
+mean(diffmeans)
+sd(diffmeans)
+pvalue <- ((sum(diffmeans >= obsdiff) + 1)/(SIMS + 1))*2
+pvalue
+```
+
+### Bootstrap CI
+
+```{r}
+B <- 10^4 - 1
+bsd <- numeric(B)
+for(i in 1:B){
+  bsm <- sample(BT$BodyTemp[BT$Gender == "Male"], size = 25, replace = TRUE)
+  bsf <- sample(BT$BodyTemp[BT$Gender == "Female"], size = 25, replace = TRUE)
+  bsd[i] <- mean(bsf) - mean(bsm)
+}
+CI <- quantile(bsd, probs = c(0.025, 0.975))
+CI
+```
