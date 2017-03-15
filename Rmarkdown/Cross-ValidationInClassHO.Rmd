@@ -2,12 +2,11 @@
 title: "Cross-Validation"
 author: "Alan Arnholt"
 date: 'Last Updated on: `r format(Sys.time(), "%b %d, %Y at %X")`'
-output:
-  bookdown::html_document2:
-    css: ../CSS/asu.css
+bibliography: ./BIB/CV.bib
+output: 
+  bookdown::html_document2: 
     highlight: textmate
     theme: yeti
-bibliography: ./BIB/CV.bib
 ---
 
 ```{r, label = "SETUP", echo = FALSE, results= 'hide', message = FALSE, warning = FALSE}
