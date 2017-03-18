@@ -11,7 +11,7 @@
 
 <meta name="author" content="Leave this field blank" />
 
-<meta name="date" content="2016-12-28" />
+<meta name="date" content="2017-03-18" />
 
 <title>Lab: Cross-Validation</title>
 
@@ -68,7 +68,6 @@ h6 {
 }
 </style>
 
-<link href="data:text/css;charset=utf-8,h1%7B%0Atext%2Dalign%3A%20center%3B%0Acolor%3A%20%23ffd700%3B%0Apadding%3A%2010px%3B%0Abackground%2Dcolor%3A%20black%0A%7D%0A" rel="stylesheet" type="text/css" />
 
 </head>
 
@@ -120,13 +119,13 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Lab: Cross-Validation</h1>
 <h4 class="author"><em>Leave this field blank</em></h4>
-<h4 class="date"><em>December 28, 2016</em></h4>
+<h4 class="date"><em>March 18, 2017</em></h4>
 
 </div>
 
 
-<div id="the-validation-set-approach" class="section level2">
-<h2>The Validation Set Approach</h2>
+<div id="the-validation-set-approach" class="section level1">
+<h1><span class="header-section-number">1</span> The Validation Set Approach</h1>
 <p>We explore the use of the validation set approach in order to estimate the test error rates that result from fitting various linear models on the <code>Auto</code> data set.</p>
 <p>Before we begin, we use the <code>set.seed()</code> function in order to set a seed for seed <code>R</code>’s random number generator, so that the reader will obtain precisely the same results as those shown below. It is generally a good idea to set a random seed when performing an analysis such as cross-validation that contains an element of randomness, so that the results obtained can be reproduced precisely at a later time.</p>
 <p>We begin by using the <code>sample()</code> function to split the set of observations into two halves, by selecting a random subset of 196 observations out of the original 392 observations. We refer to these observations as the training set.</p>
@@ -195,9 +194,9 @@ EMSE2</code></pre>
 <pre><code>[1] 19.82259</code></pre>
 <pre class="r"><code>#
 lm.fit3 &lt;- lm(mpg ~ poly(horsepower, 3), data = Auto, subset = train)
-EMSE3 &lt;- mean((Auto$mpg - predict(lm.fit2, newdata = Auto))[-train]^2)
+EMSE3 &lt;- mean((Auto$mpg - predict(lm.fit3, newdata = Auto))[-train]^2)
 EMSE3</code></pre>
-<pre><code>[1] 19.82259</code></pre>
+<pre><code>[1] 19.78252</code></pre>
 <pre class="r"><code># Or
 EMSE3 &lt;- mean((validSET$mpg - predict(lm.fit3, newdata = validSET))^2)
 EMSE3</code></pre>
@@ -208,34 +207,34 @@ train &lt;- sample(392, 196)
 trainSET &lt;- Auto[train, ]
 validSET &lt;- Auto[-train, ]
 lm.fit1 &lt;- lm(mpg ~ horsepower, data = Auto, subset = train)
-EMSE1 &lt;- mean((Auto$mpg - predict(lm.fit1, newdata = Auto))[-train]^2)
-EMSE1</code></pre>
+EMSE1a &lt;- mean((Auto$mpg - predict(lm.fit1, newdata = Auto))[-train]^2)
+EMSE1a</code></pre>
 <pre><code>[1] 23.29559</code></pre>
 <pre class="r"><code># Or
-EMSE1 &lt;- mean((validSET$mpg - predict(lm.fit1, newdata = validSET))^2)
-EMSE1</code></pre>
+EMSE1a &lt;- mean((validSET$mpg - predict(lm.fit1, newdata = validSET))^2)
+EMSE1a</code></pre>
 <pre><code>[1] 23.29559</code></pre>
 <pre class="r"><code>lm.fit2 &lt;- lm(mpg ~ poly(horsepower, 2), data = Auto, subset = train)
-EMSE2 &lt;- mean((Auto$mpg - predict(lm.fit2, newdata = Auto))[-train]^2)
-EMSE2</code></pre>
+EMSE2a &lt;- mean((Auto$mpg - predict(lm.fit2, newdata = Auto))[-train]^2)
+EMSE2a</code></pre>
 <pre><code>[1] 18.90124</code></pre>
 <pre class="r"><code># Or
-EMSE2 &lt;- mean((validSET$mpg - predict(lm.fit2, newdata = validSET))^2)
-EMSE2</code></pre>
+EMSE2a &lt;- mean((validSET$mpg - predict(lm.fit2, newdata = validSET))^2)
+EMSE2a</code></pre>
 <pre><code>[1] 18.90124</code></pre>
 <pre class="r"><code>lm.fit3 &lt;- lm(mpg ~ poly(horsepower, 3), data = Auto, subset = train)
-ESME3 &lt;- mean((Auto$mpg - predict(lm.fit3, newdata = Auto))[-train]^2)
-EMSE3</code></pre>
-<pre><code>[1] 19.78252</code></pre>
+EMSE3a &lt;- mean((Auto$mpg - predict(lm.fit3, newdata = Auto))[-train]^2)
+EMSE3a</code></pre>
+<pre><code>[1] 19.2574</code></pre>
 <pre class="r"><code># Or
-EMSE3 &lt;- mean((validSET$mpg - predict(lm.fit3, newdata = validSET))^2)
-EMSE3</code></pre>
+EMSE3a &lt;- mean((validSET$mpg - predict(lm.fit3, newdata = validSET))^2)
+EMSE3a</code></pre>
 <pre><code>[1] 19.2574</code></pre>
 <p>Using this split of the observations into a training set and a validation set, we find that the validation set error rates for the models with linear, quadratic, and cubic terms are 23.2955852, 18.9012408, and 19.2573983, respectively.</p>
 <p>These results are consistent with our previous findings: a model that predicts <code>mpg</code> using a quadratic function of <code>horsepower</code> performs better than a model that involves only a linear function of <code>horsepower</code>, and there is little evidence in favor of a model that uses a cubic function of <code>horsepower</code>.</p>
 </div>
-<div id="leave-one-out-cross-validation" class="section level2">
-<h2>Leave-One-Out Cross-Validation</h2>
+<div id="leave-one-out-cross-validation" class="section level1">
+<h1><span class="header-section-number">2</span> Leave-One-Out Cross-Validation</h1>
 <p>The LOOCV estimate can be automatically computed for any generalized linear model using the <code>glm()</code> and <code>cv.glm()</code> functions. If we use <code>glm()</code> to fit a model without passing in the family argument, then it performs linear regression, just like the <code>lm()</code> function. So for instance,</p>
 <pre class="r"><code>glm.fit &lt;- glm(mpg ~ horsepower, data = Auto)
 coef(glm.fit)</code></pre>
@@ -261,9 +260,8 @@ for(i in 1:5){
 }
 cv.error</code></pre>
 <pre><code>[1] 24.23151 19.24821 19.33498 19.42443 19.03321</code></pre>
-</div>
 <div id="k-fold-cross-validation" class="section level2">
-<h2><em>k</em>-Fold Cross-Validation</h2>
+<h2><span class="header-section-number">2.1</span> <em>k</em>-Fold Cross-Validation</h2>
 <p>The <code>cv.glm()</code> function can also be used to implement <span class="math inline">\(k\)</span>-fold CV. Below we use <code>k = 10</code>, a common choice for <span class="math inline">\(k\)</span>, on the <code>Auto</code> data set. We once again set a random seed and initialize a vector in which we will store the CV errors corresponding to the polynomial fits of orders one to ten.</p>
 <pre class="r"><code>set.seed(17)
 cv.error.10 &lt;- numeric(10)
@@ -277,10 +275,11 @@ cv.error.10</code></pre>
 <p>Notice that the computation time is much shorter than that of LOOCV. (In principle, the computation time for LOOCV for a least squares linear model should be faster than for <span class="math inline">\(k\)</span>-fold CV, due to the availability of <span class="math display">\[CV_{(n)} = \frac{1}{n}\sum_{i = 1}^n\left(\frac{y_i - \hat{y}_i}{1 - h_i}\right)^2,\]</span> for LOOCV; however, unfortunately the <code>cv.glm()</code> function does not make use of this formula.) We still see little evidence that using cubic or higher-order polynomial terms leads to lower test error than simply using a quadratic fit.</p>
 <p>We saw in the last section that the two numbers associated with delta are essentially the same when LOOCV is performed. When we instead perform <span class="math inline">\(k\)</span>-fold CV, then the two numbers associated with delta differ slightly. The first is the standard <span class="math inline">\(k\)</span>-fold CV estimate, as in <span class="math display">\[CV_{(k)} = \frac{1}{k}\sum_{i=1}^kMSE_i.\]</span> The second is a bias-corrected version. On this data set, the two estimates are very similar to each other.</p>
 </div>
-<div id="fold-cross-validation" class="section level2">
-<h2>5-Fold Cross-Validation</h2>
+</div>
+<div id="fold-cross-validation" class="section level1">
+<h1><span class="header-section-number">3</span> 5-Fold Cross-Validation</h1>
 <p>Compute 5-fold Cross Validation errors for <code>mod.be</code>, <code>mod.fs</code>, <code>mod1</code>, <code>mod2</code>, and <code>mod3</code> from Project 1.</p>
-<pre class="r"><code>site &lt;- &quot;https://ww2.amstat.org/publications/jse/datasets/homes76.dat.txt&quot;
+<pre class="r"><code>site &lt;- &quot;http://ww2.amstat.org/publications/jse/datasets/homes76.dat.txt&quot;
 HP &lt;- read.table(file = site, header = TRUE)
 # Removing indicated columns
 HP &lt;- HP[ ,-c(1, 7, 10, 15, 16, 17, 18, 19)]
