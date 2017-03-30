@@ -2,9 +2,9 @@
 title: "Credit Problem--More"
 author: "Alan Arnholt"
 date: 'Last updated: `r format(Sys.time(), "%b %d, %Y")`'
+bibliography: ./BIB/CV.bib
 output:
-  html_document:
-    css: ../CSS/asu.css
+  bookdown::html_document2:
     highlight: textmate
     theme: yeti
 ---
@@ -14,9 +14,9 @@ library(knitr)
 knitr::opts_chunk$set(comment = NA, fig.align = 'center', fig.height = 5, fig.width = 5, prompt = FALSE, highlight = TRUE, tidy = FALSE, warning = FALSE, message = FALSE, tidy.opts=list(blank = TRUE, width.cutoff = 80))
 ```
 
+NOTE: Text in many places is verbatim from chapter 6 of @james_introduction_2013.
 
-
-Read in the data:
+# Read in the data: 
 
 ```{r}
 Credit <- read.csv("http://www-bcf.usc.edu/~gareth/ISL/Credit.csv")
@@ -27,21 +27,51 @@ DT::datatable(Credit, rownames = FALSE)
 ```
 
 
-## Best subsets regression
+# Best subsets regression 
+
+To perform *best subset selection*, we fit a separate least squares regression for each possible combination of the *p* predictors.  That is, we fit all *p* models that contain exactly on predictor, all $\binom{p}{2}=p(p - 1)/2$ models that contain exactly two predictors, and so forth.  We then look at all of the resulting models, with the goal of identifying the one that is *best*.
+
+## Algorithm 6.1 *Best subset selection* {-}
+
+1. Let $\mathcal{M}_0$ denote the *null model*, which contains no predictors.  This model simply predicts the sample mean for each observation.
+
+2. For $k = 1, 2, \ldots, p:$
+
+     (a) Fit all $\binom{p}{k}$ models that contain exactly $k$ predictors.
+     (b) Pick the best among these $\binom{p}{k}$ models, and call it $\mathcal{M}_k$.  Here *best* is defined as having the smallest RSS, or equivalently largest $R^2$.
+  
+3. Select a single best model from among the $\mathcal{M}_0, \ldots, \mathcal{M}_p$ using cross validated prediction error, $C_p$ (AIC), BIC, or adjusted $R^2$.   
+
+
+The `regsubsets()` function (part of the `leaps` package) performs best subset selection by identifying the best model that contains a given number of predictors, where *best* is quantified using RSS.  The syntax is the same as for `lm()`.  The `summary()` command outputs the best set of variables for each model size. 
+
+Note that the default for `nvmax` (maximum size of subsets to examine) is 8.  To evaluate all of the variables in `Credit`, use `nvmax = 12`.
 
 ```{r}
 library(leaps)
 regfit.full <- regsubsets(Balance ~. , data = Credit, nvmax = 12)
 summary(regfit.full)
+```
+
+An asterisk indicates that a given variable is included in the corresponding model.  For instance, this output indicates that the best two-variable model contains only `Rating` and `Utilization`.  
+
+The `summary()` function also returns $R^2$, RSS, adjusted $R^2$, $C_p$, and BIC.  
+
+```{r}
+names(summary(regfit.full))
 summary(regfit.full)$rsq
 reg.summary <- summary(regfit.full)
+reg.summary$bic
+reg.summary$rss
 ```
 
 
 
-## Picking
+## Plotting
 
-```{r, fig.width=10, fig.height = 12}
+Plotting RSS, adjusted $R^2$, $C_p$, and BIC for all models at once will help us decide which model to select.  The `points()` command works like the `plot()` command, except that it puts points on a plot that has already been created, instead of creating a new plot.  The `which.max()` function can be used to identify the location of the maximum point of a vector.  
+
+```{r, label= "reddot", fig.width=10, fig.height = 12, fig.cap = "Red dots indicate optimal number of variables"}
 par(mfrow = c(2, 2))
 plot(reg.summary$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
 plot(reg.summary$adjr2, xlab = "Number of Variables", ylab = " Adjusted RSq", type = "l")
@@ -55,9 +85,12 @@ points(which.min(reg.summary$bic), reg.summary$bic[which.min(reg.summary$bic)], 
 par(mfrow = c(1, 1))
 ```
 
+
 ## Using the generic `leaps` plotting functions
 
-```{r, fig.width=10, fig.height = 12}
+The top row of each plot contains a black square for each variable selected according to the optimal model associated with that statistic.
+
+```{r, fig.width=12, fig.height = 12}
 par(mfrow = c(2, 2))
 plot(regfit.full, scale = "r2")
 plot(regfit.full, scale = "adjr2")
@@ -75,6 +108,21 @@ coef(regfit.full, which.min(reg.summary$bic))
 
 ## Forward selection with `leaps`
 
+*Forward stepwise selection* is a computationally efficient alternative to best subset selection.  While the best subset selection procedure considers all $2^p$ possible models containing subsets of the $p$ predicts, forward stepwise considers a much smaller set of models.  Forward stepwise selection begins with a model containing no predictors, and then adds predicts to the model, one-at-a-time, until all of the predictors are in the model.  In particular, at each step the variable that gives the greatest *additional* improvement to the fit is added to the model.  
+
+## Algorithm 6.2 *Forward stepwise selection* {-}
+
+1. Let $\mathcal{M}_0$ denote the *null model*, which contains no predictors.  This model simply predicts the sample mean for each observation.
+
+2. For $k = 0, 1, \ldots, p-1:$
+
+     (a) Consider all $\binom{p}{k}$ models that augment the predictors in $\mathcal{M}_k$ with one additional predictor.
+     (b) Choose the *best* among these $p-k$ models, and call it $\mathcal{M}_{k+1}$.  Here *best* is defined as having the smallest RSS, or equivalently largest $R^2$.
+  
+3. Select a single best model from among the $\mathcal{M}_0, \ldots, \mathcal{M}_p$ using cross validated prediction error, $C_p$ (AIC), BIC, or adjusted $R^2$.
+
+Unlike best subset selection, which involved fitting $2^p$ models, forward step wise selection involves fitting one null model, along with $p-k$ models in the *k*th iteration, for $k=0,1, \ldots,p-1$.  This amounts to a total of $1 + \sum_{k=0}^{p-1}(p-k)=1 + p(p + 1)/2$ models.  This is a substantial difference: when $p=12$, best subset selection requires fitting $2^{12} = `r 2^12`$ models, whereas forward stepwise selection requires fitting only $1 + 12(12 + 1)= `r 1 + 12*(12+1)`$ models.
+
 ```{r}
 regfit.fwd <- regsubsets(Balance ~. , data = Credit , nvmax = 12,
 method = "forward")
@@ -82,9 +130,9 @@ summary(regfit.fwd)
 reg.summary <- summary(regfit.fwd)
 ```
 
-## Picking
+## Plotting
 
-```{r, fig.width=10, fig.height = 12}
+```{r, fig.width=12, fig.height = 12}
 par(mfrow = c(2, 2))
 plot(reg.summary$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
 plot(reg.summary$adjr2, xlab = "Number of Variables", ylab = " Adjusted RSq", type = "l")
@@ -119,16 +167,33 @@ coef(regfit.fwd, which.min(reg.summary$bic))
 
 ## Backward selection with `leaps`
 
+*Backward stepwise selection* like forward stepwise selection provides a computationally efficient alternative to best subset selection.  However, unlike forward stepwise selection, it begins with the full least squares model containing all *p* predictors, and then iteratively removes the least useful predictor, one-at-a-time. 
+
+## Algorithm 6.3 *Backward stepwise selection* {-}
+
+1. Let $\mathcal{M}_p$ denote the *full model*, which contains all *p* predictors.  
+
+2. For $k = p, p-1, \ldots, 1:$
+
+     (a) Consider all *$\binom{p}{k}$*k* models that contain all but one of the predictors in $\mathcal{M}_k$, for a total of $k-1$ predictors.
+     (b) Choose the *best* among these $k$ models, and call it $\mathcal{M}_{k-1}$.  Here *best* is defined as having the smallest RSS, or equivalently largest $R^2$.
+  
+3. Select a single best model from among the $\mathcal{M}_0, \ldots, \mathcal{M}_p$ using cross validated prediction error, $C_p$ (AIC), BIC, or adjusted $R^2$.
+
+
+Like forward stepwise selection, the backward selection approach searches through only $1 + p(p+1)/2$ models, and so can be applied in settings where *p* is too large to apply best subset selection.  Also like forward stepwise selection, backward stepwise selection is not guaranteed to yield the *best* model containing a subset of *p* predictors.
+
+Backward selection requires that the number of samples $n$ is larger than the number of variables $p$ (so that the full model can be fit).  In contrast, forward stepwise can be used even when $n <p$, and so is the only viable method when $p$ is very large.
+
 ```{r}
-regfit.bwd <- regsubsets(Balance ~. , data = Credit , nvmax = 12,
-method = "backward")
+regfit.bwd <- regsubsets(Balance ~. , data = Credit , nvmax = 12, method = "backward")
 summary(regfit.bwd)
 reg.summary <- summary(regfit.bwd)
 ```
 
-## Picking
+## Plotting
 
-```{r, fig.width=10, fig.height = 12}
+```{r, fig.width=12, fig.height = 12}
 par(mfrow = c(2, 2))
 plot(reg.summary$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
 plot(reg.summary$adjr2, xlab = "Number of Variables", ylab = " Adjusted RSq", type = "l")
@@ -144,7 +209,7 @@ par(mfrow = c(1, 1))
 
 ## Using the build in `leaps` plotting functions
 
-```{r, fig.width=10, fig.height = 12}
+```{r, fig.width=12, fig.height = 12}
 par(mfrow = c(2, 2))
 plot(regfit.bwd, scale = "r2")
 plot(regfit.bwd, scale = "adjr2")
@@ -163,20 +228,45 @@ coef(regfit.bwd, which.min(reg.summary$bic))
 ### Different Models?
 
 ```{r}
+coef(regfit.full, 5)
+coef(regfit.fwd, 5)
+coef(regfit.bwd, 5)
+#
 coef(regfit.full, 7)
 coef(regfit.fwd, 7)
 coef(regfit.bwd, 7)
 ```
 
 
-## Choosing among models using validation set approach
+# Choosing among models using validation set approach
+
+We just saw that it is possible to choose among a set of models of different sizes using $C_p$, BIC, and adjusted $R^2$.  We will now consider how to do this using the validation set and cross-validation approaches.  
+
+In order for these approaches to yield accurate estimates of the test error, we must use *only the training observations* to perform all aspects of model fitting---including variable selection.  Therefore, the determination of which model of a given size is best must be made using *only the training observations*.  This point is subtle but important.  If the full data set is used to perform the best subset selection step, the validation set errors and cross-validation errors that we obtain will not be accurate estimates of the test error.
+
+In order to use the validation set approach, we begin by splitting the observations into a training set and a test set.  We do this by creating a random vector, `train`, of elements equal to `TRUE` if the corresponding observation is in the training set, and `FALSE` otherwise.  The vector `test` has a `TRUE` if the observation is in the test set, and a `FALSE` otherwise.  Note the `!` in the command to create `test` causes `TRUE`s to be switched to `FALSE`s and vice versa. 
 
 ```{r}
 set.seed(23)
 train = sample(c(TRUE, FALSE), size = nrow(Credit), replace = TRUE)
 test <- (!train)
+```
+
+Now, we apply `regsubsets()` to the training set in order to perform best subset selection.
+
+```{r}
 regfit.best <- regsubsets(Balance ~ ., data = Credit[train, ], nvmax = 12)
+```
+
+Before computing the validation set error for the best model of each model size, a model matrix for the test data is created.
+
+```{r}
 test.mat <- model.matrix(Balance ~ ., data = Credit[test, ])
+```
+
+The `model.matrix()` function is used in many regression packages for building an "X" matrix from data.  Now we run the loop, and for each size `i`, we extract the coefficients from `regfit.best` for the best model of that size, multiply them into the appropriate columns of the test model matrix to form the predictions, and compute the test MSE.
+
+```{r}
 val.errors <- numeric(12)
 for(i in 1:12){
   coefi <- coef(regfit.best, id = i)
@@ -190,25 +280,39 @@ coef(regfit.best, which.min(val.errors))
 
 ## Creating a `predict` function for `regsubsets`
 
+That last chunk of code was rather tedious, partly because there is no `predict()` method for `regsubsets()`.  Since we will be using this function again, we can capture our steps above and write our own method.
+
 ```{r}
 predict.regsubsets=function(object,newdata ,id ,...){
-form <- as.formula(object$call[[2]])
-mat <- model.matrix(form,newdata)
-coefi <- coef(object,id=id)
-xvars <- names(coefi)
-mat[,xvars]%*%coefi
+  form <- as.formula(object$call[[2]])
+  mat <- model.matrix(form, newdata)
+  coefi <- coef(object,id = id)
+  xvars <- names(coefi)
+  mat[ , xvars]%*%coefi
 }
 ```
 
 
+Finally, we perform best subset selection on the full data set, and select the best 12 variable model.  It is important that we make use of the full data set in order to obtain more accurate coefficient estimates.  Note that we perform best subset selection of the full data set and select the best 12 variable model, rather that simply using the variables that were obtained from the training set, because the best 12-variable model on the full data set may differ from the corresponding model in the training set.
+
+```{r}
+regfit.best <- regsubsets(Balance ~ ., data = Credit, nvmax = 12)
+coef(regfit.best, 12)
+```
+
 ## Choosing among models of different sizes with cross validation
+
+Next we choose among the models of different sizes using cross validation.  This approach is somewhat involved, as we must perform best subset selection *within each of the k training sets*.  Despite this, we see that with its clever subsetting syntax, `R` makes this job quite easy.  First we create a vector that allocates each observation to one of $k = 5$ folds, and we create a matrix in which we will store the results.
 
 ```{r}
 k <- 5
 set.seed(1)
 folds <- sample(1:k, size = nrow(Credit), replace = TRUE)
 cv.errors <- matrix(NA, k, 12, dimnames = list(NULL, paste(1:12)))
-#
+```
+Now we write a for loop that performs the cross-validation.  IN the $j^{\text{th}}$ fold, the elements of `folds` that equal `j` are in the test set, and the remainder are in the training set. We make our predictions for each model size (using our new `predict()` method), compute the test errors on the appropriate subset, and store them in the appropriate slot in the matrix `cv.errors`.
+
+```{r}
 for(j in 1:k){
   best.fit <- regsubsets(Balance ~ ., data = Credit[folds != j, ], nvmax = 12)
   for(i in 1:12){
@@ -216,6 +320,11 @@ for(j in 1:k){
     cv.errors[j, i] <- mean((Credit$Balance[folds==j] - pred)^2)
   }
 }
+```
+
+This has given us a $5 \times 12$ matrix, of which the ($i,j$)th element corresponds to the test MSE for the $i^{\text{th}}$ cross-validation fold for the best $j$-variable model.  We use the `apply()` function to average over the columns of this matrix in order to obtain a vector for which the $j^{\text{th}}$ element is the cross validation error for the $j$-variable model.
+
+```{r}
 mean.cv.errors <- apply(cv.errors, 2, mean)
 mean.cv.errors
 which.min(mean.cv.errors)
@@ -232,21 +341,44 @@ mymod <- lm(Balance ~ Income + Rating +  Student, data = Credit)
 summary(mymod)
 ```
 
-
-
 # Using `stepAIC`
 
 ```{r}
 library(MASS)
-mod.fs <- stepAIC(lm(Balance ~ 1, data = Credit), scope = .~Income + Limit + Cards + Age + Education + Gender + Student + Married + Ethnicity + Rating + Utilization, direction = "forward", test = "F")
-mod.be <- stepAIC(lm(Balance ~ Income + Limit + Cards + Age + Education + Gender + Student + Married + Ethnicity + Rating + Utilization, data = Credit), direction = "backward", test = "F")
+null <- lm(Balance ~ 1, data = Credit)
+full <- lm(Balance ~ ., data = Credit)
+mod.fs <- stepAIC(null, scope = list(lower = null, upper = full), direction = "forward", test = "F")
+mod.be <- stepAIC(full, scope = list(lower = null, upper = full), direction = "backward", test = "F")
 summary(mod.fs)
 summary(mod.be) 
 car::vif(mod.be)
 car::vif(mod.fs)
 ```
 
-# Ridge Regression
+# Shrikage Methods
+
+As an alternative to subset selection, we can fit a model containing all *p* predictors using a technique that *constrains* or *regularizes* the coefficient estimates, or equivalently, that *shrinks* the coefficient estimates towards zero.  It turns out that shrinking the coefficient estimates can significantly reduce their variance.  The two best-known techniques for shrinking the regression coefficients towards zero are *ridge regression* and the *lasso*.
+
+## Ridge Regression
+
+The least squares fitting procedure estimates $\beta_0, \beta_1, \ldots, \beta_p$ using the values that minimize Equation \@ref(eq:ls).
+
+\begin{equation}
+\text{RSS} = \sum_{i=1}^{n}\left(y_i - \beta_0 - \sum_{j=1}^{p}\beta_{j}x_{ij} \right)^2
+(\#eq:ls)
+\end{equation}
+
+Ridge regression is very similar to least squares, except that the coefficints are estimated by minimizing a slightly different quantity.  In particular, the ridge regression coefficint estimates $\hat{\beta}^{R}$ are the values that minimize Equation \@ref(eq:rr).
+
+\begin{equation}
+\sum_{i=1}^{n}\left(y_i - \beta_0 - \sum_{j=1}^{p}\beta_{j}x_{ij} \right)^2 + \lambda \sum_{j=1}^{p}\beta_j^2 = \text{RSS} + \lambda \sum_{j=1}^{p}\beta_j^2
+(\#eq:rr)
+\end{equation}
+
+where $\lambda \geq 0$ is a *tuning parameter*, to be estimated separately.  As with least squares, ridge regression seeks coefficint estimates that fit the data well, by making the RSS small.  However, the second term $\lambda \sum_{j=1}^{p}\beta_j^2$, called a *shrinkage penalty*, is small when $\beta_1, \ldots, \beta_p$ are close to zero, and so has the effect of *shrinking* the estimates of $\beta_j$ towards zero.  The tuning parameter servers to control the realtive impact of these two two terms on the regression coefficient estimates.  When $\lambda = 0$, the penalty term has no effect, and ridge regression will produce the least squares estimates.  However, as $\lambda \rightarrow \infty$, the impact of the shrinkage penalty grows, and the ridge regression codefficient estimates will approach zero.  Unlike least squares, which generates only one set ofcoefficient estimates, ridge regression will produce a different set of coefficint estimates $\hat{\beta}^{R}_{\lambda}$, for each value of $\lambda$.
+
+**Note that the shrinkage penalty in not applied to $\beta_0$.**
+
 
 ```{r}
 library(glmnet)
@@ -295,7 +427,7 @@ predict(final, type = "coefficients", s = 20)
 
 * Create a model that predicts `Rating` with `Limit`, `Cards`, `Married`, `Student`, and `Education` as features. 
 
-```{r}
+```{r, fig.width = 12, fig.height = 12}
 mod <- lm(Rating ~ Limit + Cards + Married + Student + Education, data = Credit)
 summary(mod)
 par(mfrow = c(2, 2))
@@ -322,3 +454,4 @@ coef(modN)[1] + coef(modN)[2]*6000 + coef(modN)[3]*6000^2 + coef(modN)[4]*4 + co
 predict(modN, newdata = data.frame(Limit = 12000, Cards = 2, Married = "Yes", Student = "No", Education = 8), response = "pred")
 ```
 
+## References
