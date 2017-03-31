@@ -5,7 +5,7 @@ author: |
 institute: |
   | [\textcolor{blue}{Department of Mathematical Sciences}](http://mathsci.appstate.edu)
   | [\textcolor{blue}{Appalachian State University}](http://appstate.edu)
-date: 'Last compiled: `r format(Sys.time(), "%b %d, %Y")`'
+date: 'January 30, 2017'
 output:
   beamer_presentation:
     theme: "Malmoe"
