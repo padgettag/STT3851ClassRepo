@@ -8,3 +8,7 @@ grid <- 10^seq(10, -2, length = 100)
 #
 ridge.mod <- glmnet(X, y, alpha = 0, lambda = grid)
 dim(coef(ridge.mod))
+plot(ridge.mod, label = TRUE, xvar = "norm")
+plot(ridge.mod, label = TRUE, xvar = "lambda")
+plot(ridge.mod, label = TRUE, xvar = "dev")
+# 
