@@ -247,7 +247,7 @@ In order for these approaches to yield accurate estimates of the test error, we 
 In order to use the validation set approach, we begin by splitting the observations into a training set and a test set.  We do this by creating a random vector, `train`, of elements equal to `TRUE` if the corresponding observation is in the training set, and `FALSE` otherwise.  The vector `test` has a `TRUE` if the observation is in the test set, and a `FALSE` otherwise.  Note the `!` in the command to create `test` causes `TRUE`s to be switched to `FALSE`s and vice versa. 
 
 ```{r}
-set.seed(23)
+set.seed(134)
 train = sample(c(TRUE, FALSE), size = nrow(Credit), replace = TRUE)
 test <- (!train)
 ```
@@ -293,11 +293,11 @@ predict.regsubsets=function(object,newdata ,id ,...){
 ```
 
 
-Finally, we perform best subset selection on the full data set, and select the best 12 variable model.  It is important that we make use of the full data set in order to obtain more accurate coefficient estimates.  Note that we perform best subset selection of the full data set and select the best 12 variable model, rather that simply using the variables that were obtained from the training set, because the best 12-variable model on the full data set may differ from the corresponding model in the training set.
+Finally, we perform best subset selection on the full data set, and select the best `r which.min(val.errors)` variable model.  It is important that we make use of the full data set in order to obtain more accurate coefficient estimates.  Note that we perform best subset selection of the full data set and select the best `r which.min(val.errors)` variable model, rather that simply using the variables that were obtained from the training set, because the best `r which.min(val.errors)`-variable model on the full data set may differ from the corresponding model in the training set.
 
 ```{r}
-regfit.best <- regsubsets(Balance ~ ., data = Credit, nvmax = 12)
-coef(regfit.best, 12)
+regfit.best <- regsubsets(Balance ~ ., data = Credit, nvmax = which.min(val.errors))
+coef(regfit.best, id = which.min(val.errors))
 ```
 
 ## Choosing among models of different sizes with cross validation
@@ -310,7 +310,7 @@ set.seed(1)
 folds <- sample(1:k, size = nrow(Credit), replace = TRUE)
 cv.errors <- matrix(NA, k, 12, dimnames = list(NULL, paste(1:12)))
 ```
-Now we write a for loop that performs the cross-validation.  IN the $j^{\text{th}}$ fold, the elements of `folds` that equal `j` are in the test set, and the remainder are in the training set. We make our predictions for each model size (using our new `predict()` method), compute the test errors on the appropriate subset, and store them in the appropriate slot in the matrix `cv.errors`.
+Now we write a for loop that performs the cross-validation.  In the $j^{\text{th}}$ fold, the elements of `folds` that equal `j` are in the test set, and the remainder are in the training set. We make our predictions for each model size (using our new `predict()` method), compute the test errors on the appropriate subset, and store them in the appropriate slot in the matrix `cv.errors`.
 
 ```{r}
 for(j in 1:k){
@@ -355,7 +355,7 @@ car::vif(mod.be)
 car::vif(mod.fs)
 ```
 
-# Shrikage Methods
+# Shrinkage Methods
 
 As an alternative to subset selection, we can fit a model containing all *p* predictors using a technique that *constrains* or *regularizes* the coefficient estimates, or equivalently, that *shrinks* the coefficient estimates towards zero.  It turns out that shrinking the coefficient estimates can significantly reduce their variance.  The two best-known techniques for shrinking the regression coefficients towards zero are *ridge regression* and the *lasso*.
 
@@ -368,14 +368,14 @@ The least squares fitting procedure estimates $\beta_0, \beta_1, \ldots, \beta_p
 (\#eq:ls)
 \end{equation}
 
-Ridge regression is very similar to least squares, except that the coefficints are estimated by minimizing a slightly different quantity.  In particular, the ridge regression coefficint estimates $\hat{\beta}^{R}$ are the values that minimize Equation \@ref(eq:rr).
+Ridge regression is very similar to least squares, except that the coefficients are estimated by minimizing a slightly different quantity.  In particular, the ridge regression coefficient estimates $\hat{\beta}^{R}$ are the values that minimize Equation \@ref(eq:rr).
 
 \begin{equation}
 \sum_{i=1}^{n}\left(y_i - \beta_0 - \sum_{j=1}^{p}\beta_{j}x_{ij} \right)^2 + \lambda \sum_{j=1}^{p}\beta_j^2 = \text{RSS} + \lambda \sum_{j=1}^{p}\beta_j^2
 (\#eq:rr)
 \end{equation}
 
-where $\lambda \geq 0$ is a *tuning parameter*, to be estimated separately.  As with least squares, ridge regression seeks coefficint estimates that fit the data well, by making the RSS small.  However, the second term $\lambda \sum_{j=1}^{p}\beta_j^2$, called a *shrinkage penalty*, is small when $\beta_1, \ldots, \beta_p$ are close to zero, and so has the effect of *shrinking* the estimates of $\beta_j$ towards zero.  The tuning parameter servers to control the realtive impact of these two two terms on the regression coefficient estimates.  When $\lambda = 0$, the penalty term has no effect, and ridge regression will produce the least squares estimates.  However, as $\lambda \rightarrow \infty$, the impact of the shrinkage penalty grows, and the ridge regression codefficient estimates will approach zero.  Unlike least squares, which generates only one set ofcoefficient estimates, ridge regression will produce a different set of coefficint estimates $\hat{\beta}^{R}_{\lambda}$, for each value of $\lambda$.
+where $\lambda \geq 0$ is a *tuning parameter*, to be estimated separately.  As with least squares, ridge regression seeks coefficient estimates that fit the data well, by making the RSS small.  However, the second term $\lambda \sum_{j=1}^{p}\beta_j^2$, called a *shrinkage penalty*, is small when $\beta_1, \ldots, \beta_p$ are close to zero, and so has the effect of *shrinking* the estimates of $\beta_j$ towards zero.  The tuning parameter servers to control the relative impact of these two two terms on the regression coefficient estimates.  When $\lambda = 0$, the penalty term has no effect, and ridge regression will produce the least squares estimates.  However, as $\lambda \rightarrow \infty$, the impact of the shrinkage penalty grows, and the ridge regression coefficient estimates will approach zero.  Unlike least squares, which generates only one set of coefficient estimates, ridge regression will produce a different set of coefficient estimates $\hat{\beta}^{R}_{\lambda}$, for each value of $\lambda$.
 
 **Note that the shrinkage penalty in not applied to $\beta_0$.**
 
