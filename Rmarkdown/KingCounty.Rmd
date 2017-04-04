@@ -99,7 +99,7 @@ p5 <- ggplot(data = housedata, aes(x = sqft_living, y = price)) +
 p5
 ```
 
-**Note*  For both `stat_bin2d` and `stat_binhex`, if you manually specify the range, and there is a bin that falls outside that range because it has too many of too few points, that bin will show up as grey rather than the color at the high or low end of the range. Observe the gray hexagons in the lower left corner of the above graph.
+**Note*  For both `stat_bin2d` and `stat_binhex`, if you manually specify the range, and there is a bin that falls outside that range because it has too many or too few points, that bin will show up as grey rather than the color at the high or low end of the range. Observe the gray hexagons in the lower left corner of the above graph.
 
 ```{r, fig.width = 6}
 p6 <- ggplot(data = housedata, aes(x = sqft_living, y = price)) + 
