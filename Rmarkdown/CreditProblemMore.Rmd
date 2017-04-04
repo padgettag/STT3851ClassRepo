@@ -116,7 +116,7 @@ coef(regfit.full, which.min(reg.summary$bic))
 
 2. For $k = 0, 1, \ldots, p-1:$
 
-     (a) Consider all $\binom{p}{k}$ models that augment the predictors in $\mathcal{M}_k$ with one additional predictor.
+     (a) Consider all $p-k$ models that augment the predictors in $\mathcal{M}_k$ with one additional predictor.
      (b) Choose the *best* among these $p-k$ models, and call it $\mathcal{M}_{k+1}$.  Here *best* is defined as having the smallest RSS, or equivalently largest $R^2$.
   
 3. Select a single best model from among the $\mathcal{M}_0, \ldots, \mathcal{M}_p$ using cross validated prediction error, $C_p$ (AIC), BIC, or adjusted $R^2$.
@@ -175,7 +175,7 @@ coef(regfit.fwd, which.min(reg.summary$bic))
 
 2. For $k = p, p-1, \ldots, 1:$
 
-     (a) Consider all *$\binom{p}{k}$*k* models that contain all but one of the predictors in $\mathcal{M}_k$, for a total of $k-1$ predictors.
+     (a) Consider all *k* models that contain all but one of the predictors in $\mathcal{M}_k$, for a total of $k-1$ predictors.
      (b) Choose the *best* among these $k$ models, and call it $\mathcal{M}_{k-1}$.  Here *best* is defined as having the smallest RSS, or equivalently largest $R^2$.
   
 3. Select a single best model from among the $\mathcal{M}_0, \ldots, \mathcal{M}_p$ using cross validated prediction error, $C_p$ (AIC), BIC, or adjusted $R^2$.
