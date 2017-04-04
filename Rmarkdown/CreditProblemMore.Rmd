@@ -379,7 +379,6 @@ where $\lambda \geq 0$ is a *tuning parameter*, to be estimated separately.  As 
 
 **Note that the shrinkage penalty in not applied to $\beta_0$.**
 
-
 ```{r}
 library(glmnet)
 x <- model.matrix(Balance ~ ., data = Credit)[, -1]
