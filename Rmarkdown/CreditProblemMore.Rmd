@@ -252,7 +252,7 @@ train = sample(c(TRUE, FALSE), size = nrow(Credit), replace = TRUE)
 test <- (!train)
 ```
 
-Now, we apply `regsubsets()` to the training set in order to perform best subset selection.
+Now, we apply `regsubsets()` to the training set in order to perform **best subset selection**.  Note: this method is not viable for large *p*.
 
 ```{r}
 regfit.best <- regsubsets(Balance ~ ., data = Credit[train, ], nvmax = 12)
@@ -262,9 +262,22 @@ Before computing the validation set error for the best model of each model size,
 
 ```{r}
 test.mat <- model.matrix(Balance ~ ., data = Credit[test, ])
+head(test.mat)
 ```
 
 The `model.matrix()` function is used in many regression packages for building an "X" matrix from data.  Now we run the loop, and for each size `i`, we extract the coefficients from `regfit.best` for the best model of that size, multiply them into the appropriate columns of the test model matrix to form the predictions, and compute the test MSE.
+
+```{r}
+coef1 <- coef(regfit.best, id = 1)
+coef1
+coef2 <- coef(regfit.best, id = 2)
+coef2
+names(coef1)
+names(coef2)
+head(test.mat[, names(coef1)])
+head(test.mat[, names(coef2)])
+```
+
 
 ```{r}
 val.errors <- numeric(12)
@@ -283,10 +296,10 @@ coef(regfit.best, which.min(val.errors))
 That last chunk of code was rather tedious, partly because there is no `predict()` method for `regsubsets()`.  Since we will be using this function again, we can capture our steps above and write our own method.
 
 ```{r}
-predict.regsubsets=function(object,newdata ,id ,...){
+predict.regsubsets=function(object, newdata, id, ...){
   form <- as.formula(object$call[[2]])
   mat <- model.matrix(form, newdata)
-  coefi <- coef(object,id = id)
+  coefi <- coef(object, id = id)
   xvars <- names(coefi)
   mat[ , xvars]%*%coefi
 }
@@ -310,14 +323,15 @@ set.seed(1)
 folds <- sample(1:k, size = nrow(Credit), replace = TRUE)
 cv.errors <- matrix(NA, k, 12, dimnames = list(NULL, paste(1:12)))
 ```
+
 Now we write a for loop that performs the cross-validation.  In the $j^{\text{th}}$ fold, the elements of `folds` that equal `j` are in the test set, and the remainder are in the training set. We make our predictions for each model size (using our new `predict()` method), compute the test errors on the appropriate subset, and store them in the appropriate slot in the matrix `cv.errors`.
 
 ```{r}
 for(j in 1:k){
   best.fit <- regsubsets(Balance ~ ., data = Credit[folds != j, ], nvmax = 12)
   for(i in 1:12){
-    pred <- predict(best.fit, Credit[folds ==j,], id = i)
-    cv.errors[j, i] <- mean((Credit$Balance[folds==j] - pred)^2)
+    pred <- predict(best.fit, Credit[folds == j, ], id = i)
+    cv.errors[j, i] <- mean((Credit$Balance[folds == j] - pred)^2)
   }
 }
 ```
@@ -331,7 +345,7 @@ which.min(mean.cv.errors)
 plot(mean.cv.errors, type = "b")
 ```
 
-Note that the best model contains `r which.min(mean.cv.errors)` variables.  We now perform best subset selection of the full data set in order to obtain the `r which.min(mean.cv.errors)`-variable model.
+Note that the best model contains `r which.min(mean.cv.errors)` variables.  We now perform best subset selection of the **full data** set in order to obtain the `r which.min(mean.cv.errors)`-variable model.
 
 ```{r}
 reg.best <- regsubsets(Balance ~ ., data = Credit, nvmax = 12)
@@ -357,7 +371,7 @@ car::vif(mod.fs)
 
 # Shrinkage Methods
 
-As an alternative to subset selection, we can fit a model containing all *p* predictors using a technique that *constrains* or *regularizes* the coefficient estimates, or equivalently, that *shrinks* the coefficient estimates towards zero.  It turns out that shrinking the coefficient estimates can significantly reduce their variance.  The two best-known techniques for shrinking the regression coefficients towards zero are *ridge regression* and the *lasso*.
+As an alternative to subset selection, we can fit a model containing all *p* predictors using a technique that *constrains* or *regularizes* the coefficient estimates, or equivalently, that *shrinks* the coefficient estimates towards zero.  It turns out that shrinking the coefficient estimates can significantly reduce their variance.  The two best-known techniques for shrinking the regression coefficients towards zero are *ridge regression* and the *lasso*.  
 
 ## Ridge Regression
 
@@ -375,19 +389,54 @@ Ridge regression is very similar to least squares, except that the coefficients 
 (\#eq:rr)
 \end{equation}
 
-where $\lambda \geq 0$ is a *tuning parameter*, to be estimated separately.  As with least squares, ridge regression seeks coefficient estimates that fit the data well, by making the RSS small.  However, the second term $\lambda \sum_{j=1}^{p}\beta_j^2$, called a *shrinkage penalty*, is small when $\beta_1, \ldots, \beta_p$ are close to zero, and so has the effect of *shrinking* the estimates of $\beta_j$ towards zero.  The tuning parameter servers to control the relative impact of these two two terms on the regression coefficient estimates.  When $\lambda = 0$, the penalty term has no effect, and ridge regression will produce the least squares estimates.  However, as $\lambda \rightarrow \infty$, the impact of the shrinkage penalty grows, and the ridge regression coefficient estimates will approach zero.  Unlike least squares, which generates only one set of coefficient estimates, ridge regression will produce a different set of coefficient estimates $\hat{\beta}^{R}_{\lambda}$, for each value of $\lambda$.
+where $\lambda \geq 0$ is a *tuning parameter*, to be estimated separately.  As with least squares, ridge regression seeks coefficient estimates that fit the data well, by making the RSS small.  However, the second term $\lambda \sum_{j=1}^{p}\beta_j^2$, called a *shrinkage penalty*, is small when $\beta_1, \ldots, \beta_p$ are close to zero, and so has the effect of *shrinking* the estimates of $\beta_j$ towards zero.  The tuning parameter serves to control the relative impact of these two two terms on the regression coefficient estimates.  When $\lambda = 0$, the penalty term has no effect, and ridge regression will produce the least squares estimates.  However, as $\lambda \rightarrow \infty$, the impact of the shrinkage penalty grows, and the ridge regression coefficient estimates will approach zero.  Unlike least squares, which generates only one set of coefficient estimates, ridge regression will produce a different set of coefficient estimates $\hat{\beta}^{R}_{\lambda}$, for each value of $\lambda$.
 
 **Note that the shrinkage penalty in not applied to $\beta_0$.**
 
+### `glmnet()`
+
+The `glmnet()` function has an `alpha` argument that determines what type of model is fit.  If `alpha = 0` then a **ridge regreesion** model is fit, and if `alpha = 1` then a **lasso model** is fit.  By default, the `glmnet()` function standardizes the variables so that they are on the same scale.  To turn off this default setting, use the argument `standardize = FALSE`.  Also by default, the `glmnet()` function performs ridge regression for an automatically selected range of $\lambda$ values.  However, below we have choose to implement the function over a grid of values ranging form $\lambda = 10^{10}$ to $\lambda = 10^{-2}$, essentially covering the full range of scenarios from the null model containing only the intercept, to the least squares fit.  
+
+Associated with each value of $\lambda$ is a vector of ridge regression coefficients, stored in a matrix that can be accessed by `coef()`.  
+
 ```{r}
+set.seed(1)
+train = sample(c(TRUE, FALSE), size = nrow(Credit), replace = TRUE)
+test <- (!train)
 library(glmnet)
-x <- model.matrix(Balance ~ ., data = Credit)[, -1]
+x <- model.matrix(Balance ~ ., data = Credit)[, -1] # Remove (Intercept) column
 y <- Credit$Balance
 grid <- 10^seq(10, -2, length = 100)
 ridge.mod <- glmnet(x[train,], y[train], alpha = 0, lambda = grid)
 dim(coef(ridge.mod))
+```
+
+In this case, it is a $`r dim(coef(ridge.mod))[1]` \times `r dim(coef(ridge.mod))[2]`$ matrix, with `r dim(coef(ridge.mod))[1]` rows (one for each predictor, plus an intercept) and `r dim(coef(ridge.mod))[2]` columns (one for each value of $\lambda$).  We expect the coefficient estimates to be much smaller, in terms of $\mathcal{l}_2$ norm, when a large value of $\lambda$ is used, as compared to when a small value of $\lambda$ is used.
+
+```{r}
+grid[c(25, 75)]
+```
+
+These are the coefficients  when $\lambda = `r grid[25]`$, along with their $\mathcal{l}_2$ norm.
+
+```{r}
+ridge.mod$lambda[25]  # lambda
+coef(ridge.mod)[, 25]
+sqrt(sum(coef(ridge.mod)[-1, 25]^2)) # l_2 norm
+```
+
+In contrast, here are the coefficients when $\lambda = `r grid[75]`$, along with their $\mathcal{l}_2$ norm.  Note the much larger $\mathcal{l}_2$ norm of the coefficients associated with this smaller value of $\lambda$.
+
+```{r}
+ridge.mod$lambda[75]  # lambda
+coef(ridge.mod)[, 75]
+sqrt(sum(coef(ridge.mod)[-1, 75]^2)) # l_2 norm
+```
+
+
+
+```{r}
 plot(ridge.mod, xvar = "lambda", label = TRUE)
-set.seed(123)
 cv.out <- cv.glmnet(x[train,], y[train], alpha = 0)
 plot(cv.out)
 bestlambda <- cv.out$lambda.min
