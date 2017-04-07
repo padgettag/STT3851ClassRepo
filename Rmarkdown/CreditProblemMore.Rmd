@@ -417,7 +417,7 @@ In this case, it is a $`r dim(coef(ridge.mod))[1]` \times `r dim(coef(ridge.mod)
 grid[c(25, 75)]
 ```
 
-These are the coefficients  when $\lambda = `r grid[25]`$, along with their $\mathcal{l}_2$ norm.
+These are the coefficients  when $\lambda = `r grid[25]`$, along with their $\ell_2$ norm.
 
 ```{r}
 ridge.mod$lambda[25]  # lambda
@@ -425,27 +425,59 @@ coef(ridge.mod)[, 25]
 sqrt(sum(coef(ridge.mod)[-1, 25]^2)) # l_2 norm
 ```
 
-In contrast, here are the coefficients when $\lambda = `r grid[75]`$, along with their $\mathcal{l}_2$ norm.  Note the much larger $\mathcal{l}_2$ norm of the coefficients associated with this smaller value of $\lambda$.
+In contrast, here are the coefficients when $\lambda = `r grid[75]`$, along with their $\ell_2$ norm.  Note the much larger $\ell_2$ norm of the coefficients associated with this smaller value of $\lambda$.
 
 ```{r}
 ridge.mod$lambda[75]  # lambda
 coef(ridge.mod)[, 75]
+coef(ridge.mod)[-1, 75]
 sqrt(sum(coef(ridge.mod)[-1, 75]^2)) # l_2 norm
 ```
 
+We can use the `predict()` function for a number of purposes.  For instance, we can obtain the ridge regression coefficients for a new value of $\lambda$, say 50:
+
+```{r}
+predict(ridge.mod, s = 50, type = "coefficients")[1:13, ]
+predict(ridge.mod, s = 50, type = "coefficients")
+sqrt(sum(predict(ridge.mod, s = 50, type = "coefficients")[2:13, ]^2))  # l_2 norm
+```
+
+We can visualize the coefficients (for ridge regression) using the `plot()` function: 
 
 
 ```{r}
 plot(ridge.mod, xvar = "lambda", label = TRUE)
+```
+Each curve corresponds to a variable.  It shows the path of its coefficient against the $\ell_2$-norm of the whole coefficient vector as $\lambda$ varies.
+
+
+The function `glmnet()` returns a sequence of models for the users to choose from.  In many cases, users may prefer the software to select one of them.  Cross-validation is perhaps the simplest and most widely used method for that task.
+
+`cv.glmnet()` is the main function to do cross-validation in the `glmnet` package. `cv.glmnet` returns a `cv.glmnet` object, which is `cv.out` below, a list with all the ingredients of the cross-validation fit.  The object can be plotted
+ as shown below.  Note that the `cv.glmnet()` function performs ten-fold cross-validation by default.  To change the number of folds, use the `nfolds` argument.
+ 
+```{r}
 cv.out <- cv.glmnet(x[train,], y[train], alpha = 0)
 plot(cv.out)
+```
+The value of $\lambda$ that results in the smallest cross-validation error is `r cv.out$lambda.min`.  What is the test MSE associated with $\lambda = `r cv.out$lambda.min`$?
+
+
+```{r}
 bestlambda <- cv.out$lambda.min
 bestlambda
 ridge.pred <- predict(ridge.mod, s = bestlambda, newx = x[test, ])
-mean((ridge.pred - y[test])^2)
+mean((ridge.pred - y[test])^2)  # MSPE
+```
+
+Finally, we refit our ridge regression on the full data set, using the value of $\lambda$ chosen by cross-validation, and examine the coefficient estimates.
+
+```{r}
 final <- glmnet(x, y, alpha = 0)
 predict(final, type = "coefficients", s = bestlambda)
 ```
+
+As expected, none of the coefficients are zero---ridge regression does not perform variable selection!
 
 # Lasso Regression
 
@@ -453,7 +485,7 @@ predict(final, type = "coefficients", s = bestlambda)
 x <- model.matrix(Balance ~ ., data = Credit)[, -1]
 y <- Credit$Balance
 grid <- 10^seq(10, -2, length = 100)
-lasso.mod <- glmnet(x[train,], y[train], lambda = grid)
+lasso.mod <- glmnet(x[train,], y[train], lambda = grid, alpha = 1)
 dim(coef(lasso.mod))
 plot(lasso.mod, xvar = "lambda", label = TRUE)
 plot(lasso.mod, xvar = "dev", label = TRUE)
