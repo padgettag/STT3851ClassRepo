@@ -411,7 +411,7 @@ ridge.mod <- glmnet(x[train,], y[train], alpha = 0, lambda = grid)
 dim(coef(ridge.mod))
 ```
 
-In this case, it is a $`r dim(coef(ridge.mod))[1]` \times `r dim(coef(ridge.mod))[2]`$ matrix, with `r dim(coef(ridge.mod))[1]` rows (one for each predictor, plus an intercept) and `r dim(coef(ridge.mod))[2]` columns (one for each value of $\lambda$).  We expect the coefficient estimates to be much smaller, in terms of $\mathcal{l}_2$ norm, when a large value of $\lambda$ is used, as compared to when a small value of $\lambda$ is used.
+In this case, it is a $`r dim(coef(ridge.mod))[1]` \times `r dim(coef(ridge.mod))[2]`$ matrix, with `r dim(coef(ridge.mod))[1]` rows (one for each predictor, plus an intercept) and `r dim(coef(ridge.mod))[2]` columns (one for each value of $\lambda$).  We expect the coefficient estimates to be much smaller, in terms of $\ell_2$ norm, when a large value of $\lambda$ is used, as compared to when a small value of $\lambda$ is used.
 
 ```{r}
 grid[c(25, 75)]
@@ -442,10 +442,10 @@ predict(ridge.mod, s = 50, type = "coefficients")
 sqrt(sum(predict(ridge.mod, s = 50, type = "coefficients")[2:13, ]^2))  # l_2 norm
 ```
 
-We can visualize the coefficients (for ridge regression) using the `plot()` function: 
+We can visualize the coefficients (for ridge regression) using the `plot()` function as shown in Figure \@ref(fig:rm). 
 
 
-```{r}
+```{r, label = "rm", fig.cap = "Coefficients for ridge regression model"}
 plot(ridge.mod, xvar = "lambda", label = TRUE)
 ```
 Each curve corresponds to a variable.  It shows the path of its coefficient against the $\ell_2$-norm of the whole coefficient vector as $\lambda$ varies.
@@ -467,7 +467,8 @@ The value of $\lambda$ that results in the smallest cross-validation error is `r
 bestlambda <- cv.out$lambda.min
 bestlambda
 ridge.pred <- predict(ridge.mod, s = bestlambda, newx = x[test, ])
-mean((ridge.pred - y[test])^2)  # MSPE
+RE <- mean((y[test] - ridge.pred)^2)  # MSPE
+RE
 ```
 
 Finally, we refit our ridge regression on the full data set, using the value of $\lambda$ chosen by cross-validation, and examine the coefficient estimates.
@@ -481,24 +482,36 @@ As expected, none of the coefficients are zero---ridge regression does not perfo
 
 # Lasso Regression
 
-```{r}
+In order to fit a lasso moedl, we once again use the `glmnet()` function; however, this time we use the argument `alpha = 1`.
+
+```{r, label = "CP", fig.cap = "Coefficients plot for lasso model"}
 x <- model.matrix(Balance ~ ., data = Credit)[, -1]
 y <- Credit$Balance
 grid <- 10^seq(10, -2, length = 100)
 lasso.mod <- glmnet(x[train,], y[train], lambda = grid, alpha = 1)
 dim(coef(lasso.mod))
 plot(lasso.mod, xvar = "lambda", label = TRUE)
-plot(lasso.mod, xvar = "dev", label = TRUE)
-set.seed(123)
+```
+
+We can see from Figure \@ref(fig:CP) that some of the coefficients are zero depending on the choice of the tuning parameter ($\lambda$).  We now perform cross-validation and compute the associated **test error**.
+
+```{r}
+set.seed(321)                                           # set seed for reproducibility
 cv.out <- cv.glmnet(x[train,], y[train], alpha = 1)
 plot(cv.out)
 bestlambda <- cv.out$lambda.min
 bestlambda
 lasso.pred <- predict(lasso.mod, s = bestlambda, newx = x[test, ])
-mean((lasso.pred - y[test])^2)
+LE <- mean((y[test] - lasso.pred)^2)  # MSPE
+LE
+```
+
+Note that the lasso $\text{MSPE}_{\text{test}} = `r round(LE,2)`$ which is smaller that the ridge regression estimate using the best $\lambda$ from cross-validation ($`r round(RE,2)`$).  In this scenario, $\text{MSPE}_{\text{test}}$ smaller and one of the coefficients (`EthnicityCaucasian`) is zero.  Setting $\lambda = 30$ eight of the 13 coefficients estimates are exactly zero.
+
+```{r}
 final <- glmnet(x, y, alpha = 1, lambda = grid)
-predict(final, type = "coefficients", s = bestlambda)
-predict(final, type = "coefficients", s = 20)
+predict(final, type = "coefficients", s = bestlambda)[1:13, ]
+predict(final, type = "coefficients", s = 30)
 ```
 
 
