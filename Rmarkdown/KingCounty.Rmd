@@ -183,19 +183,19 @@ ggmap(KingMap) +
 
 ## Prediction
 
-* Submit a vector named (`yourlastname_yourfirstname`) with the predicted house prices for your model using the data frame `housedataT`.
+* Submit a vector named (`Yourlastname_Yourfirstname`) with the predicted house prices for your model using the data frame `housedataT`.
 
 * Suppose your final model is `mod.all`.
 
 ```{r}
-yourlastname_yourfirstname <- predict(mod.all, newdata = housedataT)
-head(yourlastname_yourfirstname)
+Yourlastname_Yourfirstname <- predict(mod.all, newdata = housedataT)
+head(Yourlastname_Yourfirstname)
 ```
 
 I will compute your $\sqrt{MSPE}$.
 
 ```{r}
-SMSPE <- sqrt(mean((head(yourlastname_yourfirstname) - c(310000, 650000, 233000, 580500, 535000, 605000))^2))
+SMSPE <- sqrt(mean((head(Yourlastname_Yourfirstname) - c(310000, 650000, 233000, 580500, 535000, 605000))^2))
 SMSPE
 ```
 
