@@ -192,6 +192,14 @@ Yourlastname_Yourfirstname <- predict(mod.all, newdata = housedataT)
 head(Yourlastname_Yourfirstname)
 ```
 
+* Use `write.csv()` to create the vector `Yourlastname_Yourfirstname.csv`
+
+```{r, eval = FALSE}
+write.csv(Yourlastname_Yourfirstname, file = "Yourlastname_Yourfirstname.csv")
+```
+
+* 
+
 I will compute your $\sqrt{MSPE}$.
 
 ```{r}
