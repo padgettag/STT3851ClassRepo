@@ -1,0 +1,203 @@
+\documentclass[final]{beamer}
+\usefonttheme{serif}
+\mode<presentation>{\usetheme{ASU}}
+\usepackage{amsmath, amsfonts, amssymb, pxfonts, eulervm, xspace, enumerate, hyperref, color, bookmark}
+\usepackage{graphicx}
+\usepackage[orientation=landscape, size=a0, scale=1.4, debug]{beamerposter}
+% \usepackage{natbib}
+
+\usecolortheme{rose}
+\setbeamercolor{background canvas}{bg=white!16!white!90}
+
+
+%-- Header and footer information ----------------------------------
+\newcommand{\footright}{\href{https://github.com/STAT-ATA-ASU/STT3851Spring2016}{https://github.com/STAT-ATA-ASU/Padgett-Averia/tree/master/Assignments2017/KingsCounty}}
+\newcommand{\footleft}{\href{mailto:arnholtat@appstate.edu}{Faculty Advisor: Alan Arnholt}}
+
+\def\conference{King County House Price Prediction Project}
+\title{Price Prediction Project}
+\author{Cescily Metzgar, Averia Padgett} 
+\institute{Department of Mathematical Sciences}
+%-------------------------------------------------------------------
+
+
+%-- Main Document --------------------------------------------------
+\begin{document}
+\begin{frame}[fragile]
+\vspace{-2ex}
+\begin{columns}[t]
+
+<<label = "setup", comment = NA, echo = FALSE, message = FALSE, warning=FALSE>>=
+options(width = 35)
+opts_chunk$set(comment = NA, fig.align='center', fig.width=13, fig.height=6, cache=FALSE, warning = FALSE, message = FALSE)
+library(maps)
+library(ggplot2)
+library(PASWR)
+library(tree)
+library(randomForest)
+library(boot)
+library(xtable)
+library(ggmap)
+housedata <- read.csv("../Data/housedata.csv", 
+                      colClasses = c(id = "character", date = "character", 
+                                     yr_built = "character", zipcode = "factor", grade = "factor"))
+housedata$date <- as.Date(housedata$date, "%Y%m%d")
+housedata$waterfront <- factor(housedata$waterfront, labels = c("No", "Yes"))
+housedata$condition <- factor(housedata$condition, labels = c("poor", "fair", "average", "good", "very good"))
+housedata$yr_renovated <- ifelse(housedata$yr_renovated == 0, housedata$yr_built, housedata$yr_renovated)
+housedata$yr_built <- as.Date(ISOdate(housedata$yr_built, 9, 1))  # Complete Year, Sept 1
+housedata$yr_renovated <- as.Date(ISOdate(housedata$yr_renovated, 9, 1))  # Last renovated Year, Sept 1
+housedata <- housedata[, -1]
+housedataT <- read.csv("../Data/housedataTEST.csv",
+                      colClasses = c(id = "character", date = "character", 
+                                     yr_built = "character", zipcode = "factor", grade = "factor"))
+housedataT$date <- as.Date(housedataT$date, "%Y%m%d")
+housedataT$waterfront <- factor(housedataT$waterfront, labels = c("No", "Yes"))
+housedataT$condition <- factor(housedataT$condition, labels = c("poor", "fair", "average", "good", "very good"))
+housedataT$yr_renovated <- ifelse(housedataT$yr_renovated == 0, housedataT$yr_built, housedataT$yr_renovated)
+housedataT$yr_built <- as.Date(ISOdate(housedataT$yr_built, 9, 1))  # Complete Year, Sept 1
+housedataT$yr_renovated <- as.Date(ISOdate(housedataT$yr_renovated, 9, 1))  # Last renovated Year, Sept 1
+housedataT <- housedataT[, -1]
+@
+
+%-- Column 1 ---------------------------------------------------
+\begin{column}{0.31\linewidth}
+\begin{minipage}[t][.955\textheight]{\linewidth} 
+
+%-- Block 1-1
+\vspace{0ex}
+\begin{block}{Overview}
+\begin{itemize}
+\item This poster examines housing data from King's County and aims to predict prices of houses based on different variables.  
+\item To ensure accurate predictive power for future observations, the data are split into a training set (80\%) and a test set (20\%). 
+\item Root mean squared error of the test set is used as a measure of model adequacy.  
+\item All computations and graphs are created with the open source software \texttt{R} \cite{R-base}. 
+\end{itemize}
+\vspace{0ex}
+\end{block}
+\vfill
+
+%-- Block 1-2
+\begin{block}{Residual Plots}
+\begin{itemize}
+\item A residual plot is a graph that shows the residuals on the vertical axis and the independent variable on the horizontal axis. If the points in a residual plot are randomly dispersed around the horizontal axis, a linear regression model is appropriate for the data; otherwise, a non-linear model is more appropriate.
+\vspace{2ex}
+\item Using the residual plots we found variables that need to be made non-linear to create a more randomly distributed residual plot so that the variables can be used in a linear model. 
+
+<< echo = FALSE, results= "hide" >>=	 
+mod2 <- lm(price ~ . + poly(sqft_living, 2, raw = TRUE) + poly(floors, 2, raw = TRUE) +poly(sqft_lot15, 2, raw=TRUE) + poly(sqft_lot, 2, raw=TRUE)- sqft_living - floors - sqft_lot15 - sqft_lot,  data = housedata)
+car::residualPlots(mod2, tests = FALSE)
+@
+\vspace{2ex}
+\item In the above residual plots the variables sqft\_living, floors, sqft\_lot15, and sqft\_lot were squared which resulted in an almost perfectly distributed residuals for each variable. 
+\end{itemize}
+\vspace{0ex}
+\vfill
+\end{block}
+\vfill
+
+\end{minipage}
+\end{column}%1
+
+%-- Column 2 ---------------------------------------------------
+
+\begin{column}{0.31\linewidth}
+\begin{minipage}[t][.955\textheight]{\linewidth} 
+
+%-- Block 2-1
+\vspace{0ex}
+\begin{block}{Basic Models Used}
+\begin{itemize}
+\item Backwards Elimination: The backwards elimination approach takes mod2 as the full model and works backwards to eliminate variables until it produces the best model, resulting in the lowest AIC possible.  
+\item Forward Selection: The forward selection approach takes a null model, a model that is basically empty, and adds variables individually until the best model is produced, resulting in the lowest AIC possible.   
+\item Interaction Model: Examines the interactions between various variables.
+\end{itemize}
+\vspace{0ex}
+\end{block}
+\vfill
+
+%-- Block 2-2
+\vspace{0ex}
+\begin{block}{King County Real Estate}
+\vspace{0ex}
+<<KCmap, echo = FALSE, fig.width = 12, fig.height = 12>>=
+KingMap <- get_map(location = c(lon = -122.1, lat = 47.48), zoom = 10, source = "google", maptype = "roadmap")
+ggmap(KingMap) +
+  geom_point(aes(x = long, y = lat, color = price), data = housedata,
+ alpha = 1, size = .01) + scale_color_gradient(low = "purple", high = "black", limits = c(70000, 8000000)) +
+  ggtitle("Houses Sold in King County, Wa (2014-2015)") + 
+  labs(x = "longitude", y = "latitude")
+@
+\vspace{0ex}
+\end{block}
+\vfill
+
+\end{minipage}
+\end{column}%2
+
+%-- Column 3 ---------------------------------------------------
+\begin{column}{0.31\linewidth}
+\begin{minipage}[t][.955\textheight]{\linewidth} 
+
+%-- Block 3-1
+\vspace{0ex}
+\begin{block}{Backwards Elimination}
+\begin{itemize}
+\item Below is the model backwards elimination produced. After running a summary of the model it produced an Adjusted R-squared value of  0.8416. 
+\vspace{1ex}
+\begin{center}\includegraphics[width=12in]{picture1.png}\end{center}
+\end{itemize}
+\vspace{0ex}
+\end{block}
+\vfill
+
+%-- Block 3-2
+\vspace{0ex}
+\begin{block}{Forward Selection}
+\begin{itemize}
+\item Below is the model forward selection produced. After running a summary of the model it produced an Adjusted R-squared value of  0.8416, the same Adjusted-R squared backwards elimination produced. \vspace{1ex}
+\begin{center}\includegraphics[width=12in]{picture2.png}\end{center}
+\end{itemize}
+\vspace{0ex}
+\end{block}
+\vfill
+
+%-- Block 3-3
+\vspace{0ex}
+\begin{block}{Interaction Model}
+\begin{itemize}
+\item Below  is the interaction model created to predict house price using various interaction terms. The following interaction terms were included in this model: bedrooms:bathrooms, sqft\_living15:sqft\_living, condition:grade, yr\_built:yr\_renovated, and zipcode:long. This model resulted in an Adjusted-R squared value of 0.8606 which is higher than both backwards elimination and forward selection. 
+\vspace{1ex}
+\begin{center}\includegraphics[width=12in]{picture3.png}\end{center}
+\end{itemize}
+\vspace{0ex}
+\end{block}
+\vfill
+
+%-- Block 3-4
+\begin{block}{References}
+\footnotesize
+\setbeamertemplate{bibliography item}[text]
+\vspace{-1ex}
+<<auto-bib, version=packageVersion('knitr'), echo=FALSE, cache=TRUE, message=FALSE, warning=FALSE>>=
+# write all packages in the current session to a bib file
+write_bib(c(.packages()), file = 'knitr-packages.bib')
+@
+
+\bibliographystyle{plain}  % can use plain but comment out natbib at top if using plain
+\bibliography{knitr-packages,poster}
+\normalsize
+\vfill
+\end{block} 
+\vfill
+
+\end{minipage}
+\end{column}%3
+
+
+
+
+\end{columns}
+\end{frame}
+\end{document}
+
